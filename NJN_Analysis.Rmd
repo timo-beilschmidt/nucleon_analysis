@@ -140,7 +140,7 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
           d <- aff_read_key(file_str, key_str, 1024)
           #diagrams[t_name] <- raw_cf_data(cf = raw_cf_meta(Time=T, dim=c(4,4)),
           #                                  data = aperm(array(d, dim = c(4, 4, 64)), c(3,1,2)))
-          diagrams[t_name] <- array(d, dim = c(4, 4, 64))
+          diagrams[[t_name]] <- array(d, dim = c(4, 4, 64))
 
         }
         nn <- Reduce('+', diagrams)
