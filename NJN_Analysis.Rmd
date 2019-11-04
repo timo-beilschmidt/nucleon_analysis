@@ -14,8 +14,8 @@ library(Raff)
 library(pracma)
 library(binhf)
 library(boot)
-source('/qbigwork2/beilschmidt/code/R/get_sl.R')
-source('/qbigwork2/beilschmidt/code/R/R_gamma.R')
+source('/home/timo/repo/nucleon_analysis/get_sl.R')
+source('/home/timo/repo/nucleon_analysis/R_gamma.R')
 #options(warn = -1, error=recover)
 trace <- function(A) {
   n <- dim(A)[1] # get dimension of matrix
@@ -73,7 +73,7 @@ cvc_to_raw_cf_test <- function(cf_dat, dims = c(1,1))
 ## NN-Correlator
 
 ```{r, echo=FALSE}
-analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA211a.30.32/J125-k0p2/",T=64, n_src = 16,n_conf = 1224){
+analyze <- function(corrKey = "N-N",pathToData="/home/timo/repo/data/N-J-N/smearing/",T=64, n_src = 16,n_conf = 96){
   # Read in data
   # n_conf <- 1224
   # n_src <- 16
@@ -93,7 +93,7 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
   # generate projektor matrix
   p <- projector(1, g$`0`)
   # Source coord list
-  source_list <- get_source_coords_table(f = paste("/hiskp4/beilschmidt/nucleon-ff/job_submit","source_coords.cA211a.30.32.nsrc16.tab", sep = "/"))
+  source_list <- get_source_coords_table(f = paste(pathToData,"source_coords.cA211a.30.32.nsrc16.tab", sep = ""))
   
   
   for (conf in seq(0, n_conf, 24)){
@@ -108,11 +108,12 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
       for (i in c(2:4)) {
         tmp_str <- unlist(strsplit(src_str_alt, ""))
         ind <- grep("[A-Z]", tmp_str)[i]
-        src_str_alt <- paste0(c(tmp_str[1:(ind-1)], "_", tmp_str[ind:(nchar(src_str_alt))]), collapse="")
+       src_str_alt <- paste0(c(tmp_str[1:(ind-1)], "_", tmp_str[ind:(nchar(src_str_alt))]), collapse="")
       }
       
       if(strcmp(corrKey, "N-N")){      
         key_str <- paste("/",corrKey,"/", src_str_alt,"/Gi_Cg5/Gf_Cg5/n1/px00py00pz00", sep = "")
+        print("Hello moto")
         d <- aff_read_key(file_str, key_str, 1024)
         # create SpinxSpinxTime matrix n1
         n1 <- array(d, dim = c(4, 4, 64))
@@ -140,7 +141,7 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
           d <- aff_read_key(file_str, key_str, 1024)
           #diagrams[t_name] <- raw_cf_data(cf = raw_cf_meta(Time=T, dim=c(4,4)),
           #                                  data = aperm(array(d, dim = c(4, 4, 64)), c(3,1,2)))
-          diagrams[t_name] <- array(d, dim = c(4, 4, 64))
+          diagrams[[t_name]] <- array(d, dim = c(4, 4, 64))
 
         }
         nn <- Reduce('+', diagrams)
