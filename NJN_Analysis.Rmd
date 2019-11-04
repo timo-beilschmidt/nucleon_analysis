@@ -16,7 +16,7 @@ library(binhf)
 library(boot)
 source('/qbigwork2/beilschmidt/code/R/get_sl.R')
 source('/qbigwork2/beilschmidt/code/R/R_gamma.R')
-#options(warn = -1, error=recover)
+options(warn = -1)#, error=recover)
 trace <- function(A) {
   n <- dim(A)[1] # get dimension of matrix
   tr <- 0 # initialize trace value
@@ -129,7 +129,6 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
         #cf_n2 <- cvc_to_raw_cf_test(d, dims=c(4,4))
 
         nn <- n1 + n2
-        str(nn)
         
       } else if (strcmp(corrKey, "N-ubGu-N")) {
         #diagrams <- list(array(c(1:1024), dim = c(4, 4, 64)),array(c(1:1024), dim = c(4, 4, 64)),array(c(1:1024), dim = c(4, 4, 64)),array(c(1:1024), dim = c(4, 4, 64)))
@@ -144,7 +143,6 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
 
         }
         nn <- Reduce('+', diagrams)
-        str(nn)
       }
       #is.raw_cf(nn)
       #get_plotdata_raw_cf(nn, "both", TRUE, TRUE) 
@@ -209,19 +207,19 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
 ```
 
 ```{r, include=FALSE}
-#c<- analyze(corrKey = "N-N")
+c2<- analyze(corrKey = "N-N")
 ```
 
 
 
 ```{r, echo=FALSE}
-plotCor <- function(c){
+plotCor <- function(c, title="N-N Correlator"){
 	df <- data.frame(t=c(1:(c$T/2)), C= c$cor, std= c$std)
-	plot(x=df$t, y=(df$C), main = "N-N Correlator",ylab = "Corr",xlab = "t", xlim=c(1,32),col="blue",  pch=1, cex.main=1.5, frame.plot=FALSE, log = "y")
+	plot(x=df$t, y=(df$C), main = title ,ylab = "Corr",xlab = "t", xlim=c(1,32),col="blue",  pch=1, cex.main=1.5, frame.plot=FALSE, log = "y")
 	arrows((df$t), (df$C-df$std),(df$t), (df$C+df$std), length=0.05, angle=90, code=3)
 	legend("topright",c("N-N"),cex=.8,col=c("blue"),pch=c(1))
 }
-#plotCor(c)
+plotCor(c2)
 ```
 
 ### Effective Mass
@@ -251,7 +249,7 @@ m_boot <- function ( corr, R, tau, tsize ) {
   #write.table( df, file="m_boot.tmp", col.names=F, row.names=F )
   return( invisible ( df ) )
 }
-# m_std <- apply(m_boot$t,2,sd, na.rm = TRUE)
+ m_std <- apply(c$cor_conf,2,sd, na.rm = TRUE)
 
 corr_mean <- function(mat, index) {
 #  cat ( "# [corr_mean] index = ", index, "\n" )
@@ -271,16 +269,62 @@ plotM <- function(c){
 	for (ttau in c(2:8)) {
 	   
 	  df <- m_boot(corr = c$cor_conf, R = 5000, tau = ttau, tsize = c$T)
-	  points(x=df$t[1:63]+1, y=(df$m[1:63]), pch=ttau,cex=0.15, col=colVec[ttau], lwd = 0.2)
+	  points(x=df$t[1:63]+1, y=(df$m[1:63]), pch=ttau,cex=0.25, col=colVec[ttau], lwd = 0.3)
 	  arrows((df$t[1:63]+1), Re(df$m[1:63]-df$std[1:63]),(df$t[1:63]+1), Re(df$m[1:63]+df$std[1:63]), length=0.02, angle=90, code=3, lwd = .2)
 	}
 }
+plotM(c2)
 ```
+
+
 ## NJN-Correlator
 
-```{r, echo = FALSE}
-print("Test")
-c <- analyze(corrKey = "N-N")
 
-c <- analyze(corrKey = "N-ubGu-N")
+First the 3pt-function correlator:
+
+
+```{r, echo = FALSE}
+c3 <- analyze(corrKey = "N-ubGu-N")
+plotCor(c3, title="3pt-function Correlator")
 ```
+
+$\left. \frac{\partial m_\lambda^{eff}(t,\tau)}{\partial \lambda} \right|_{\lambda=0}= \frac{1}{\tau}\left( \frac{\partial_\lambda C_\lambda(t)}{C(t)}- \frac{\partial_\lambda C_\lambda(t+\tau)}{C(t+\tau)}   \right)_{\lambda=0}$
+
+Plotting the ratio of 2pt- and 3pt-function:
+
+
+```{r, echo=FALSE}
+
+ratio <- function( c2pt, index, c3pt, tau=1 ){
+  i <- sample(c(1:52), size=52, replace=TRUE)
+  c2 <- apply(c2pt$cor_conf[,i], c(1), mean)
+  c3 <- apply ( c3pt$cor_conf[,i], c(1), mean )
+  idt1 <- ( 0 : ( c2pt$T - tau ) ) + 1
+  idt2 <- idt1 + tau
+
+  return ( ( c3[idt1] / c2[idt1] - c3[idt2]/c2[idt2] ) / tau )
+}
+
+boot_Ratio <- function(c2, c3, R=5000, tau =1){
+
+    r <- boot(data = c2, R=R, statistic = ratio, c3pt=c3, tau=tau)
+    nt <- dim(r$t)[2]
+    df <- data.frame (t= 0:(nt-1), rep(tau, times=nt),m= r$t0[1:nt],std= apply (r$t, c(2), sd ), r$t0[1:nt]-apply(r$t, c(2), mean )  )
+    #write.table( df, file="m_boot.tmp", col.names=F, row.names=F )
+    #return( invisible ( df ) )
+}
+
+
+df <- boot_Ratio(c2, c3, R=5000)
+    plot(x=df$t[1:63]+1 , y=Re(df$m[1:63]), main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-20, 50) ,col=colVec[1],  pch=1,cex=0.15, cex.main=1,lwd = 0.2, frame.plot=FALSE)
+    arrows((df$t[1:63]+1), Re(df$m[1:63]-df$std[1:63]),(df$t[1:63]+1), Re(df$m[1:63]+df$std[1:63]), length=0.02,lwd=.2, angle=90, code=3)
+    for (ttau in c(2:8)) {
+                   
+        df <- boot_Ratio(c2,c3, R = 5000, tau = ttau)
+        points(x=df$t[1:63]+1, y=Re(df$m[1:63]), pch=ttau,cex=0.25, col=colVec[ttau], lwd = 0.3)
+        arrows((df$t[1:63]+1), Re(df$m[1:63]-df$std[1:63]),(df$t[1:63]+1), Re(df$m[1:63]+df$std[1:63]), length=0.02, angle=90, code=3, lwd = .2)
+    }
+
+
+```
+
