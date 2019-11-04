@@ -1,0 +1,286 @@
+---
+title: "NJN-Korrelatoren"
+author: "Timo Beilschmidt"
+date: "\\today"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(hadron)
+library(Raff)
+library(pracma)
+library(binhf)
+library(boot)
+source('/qbigwork2/beilschmidt/code/R/get_sl.R')
+source('/qbigwork2/beilschmidt/code/R/R_gamma.R')
+#options(warn = -1, error=recover)
+trace <- function(A) {
+  n <- dim(A)[1] # get dimension of matrix
+  tr <- 0 # initialize trace value
+  
+  # Loop over the diagonal elements of the supplied matrix and add the element to tr
+  for (k in 1:n) {
+    l <- A[k,k]
+    tr <- tr + l
+  }
+  return(tr[[1]])
+}
+
+projector <- function(sgn, gamma0){
+  p <- array(0, dim = c(4,4))
+  for (a in c(1:4)) {
+    for (b in c(1:4)) {
+      if (a == b) {
+        p[a,b] <- 0.5
+      } else {
+        p[a,b] <- 0.5 * sgn * gamma0[a,b]
+      }
+    }
+  }
+  return(p)
+
+}
+
+cvc_to_raw_cf_test <- function(cf_dat, dims = c(1,1))
+{
+      number_of_interal_dims <- prod(dims)
+
+  # idcs for real and imaginary parts
+  ridcs <- seq(1,length(cf_dat),2)
+    iidcs <- seq(2,length(cf_dat),2)
+
+    nts <- length(ridcs)/number_of_internal_dims
+
+      # turn it into a complex 4D array of with ordering of
+      # internal dimensions and time in the 'wrong' order
+      cf_dat <- array(complex(real = cf_dat[ridcs],
+                                                        imaginary = cf_dat[iidcs]),
+                                                dim = c(1,dims,nts))
+      cf_dims <- dim(cf_dat)
+        # reshape the array, ordering 'measurement' (a single one), 'time',
+        # internal dimensions
+        cf_dat <- aperm(cf_dat, c(1,length(cf_dims),2:(length(cf_dims)-1)))
+
+        cf <- raw_cf_data(cf = raw_cf_meta(Time=nts, dim=dims),
+                                              data = cf_dat)
+          return(cf)
+}
+```
+
+## NN-Correlator
+
+```{r, echo=FALSE}
+analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA211a.30.32/J125-k0p2/",T=64, n_src = 16,n_conf = 1224){
+  # Read in data
+  # n_conf <- 1224
+  # n_src <- 16
+  # T <- 64
+  #conf <- 792
+  cor <- array(0, dim = c(T, n_src, (n_conf/24+1)))
+  cor_final <- array(0, dim = T)
+  cor_std <- array(0, dim = T)
+  nn_cor <- array(0, dim = T/2)
+  nn_std <- array(0, dim = T/2)
+  cor_mean_src <- array(0, dim = c(T, (n_conf/24+1)))
+  #load gamma matrices
+  g <- set_gamma_basis_all(g=gamma_basis$tmlqcd)
+  #load Cxgamma, but without i factor and multiply with i
+  Cg <- set_Cgamma_basis_matching( g=gamma_basis$tmlqcd  )
+  
+  # generate projektor matrix
+  p <- projector(1, g$`0`)
+  # Source coord list
+  source_list <- get_source_coords_table(f = paste("/hiskp4/beilschmidt/nucleon-ff/job_submit","source_coords.cA211a.30.32.nsrc16.tab", sep = "/"))
+  
+  
+  for (conf in seq(0, n_conf, 24)){
+    for (src in c(1:n_src)) {
+      
+      src_str <- get_source_coords_tag(c = conf, i=src, sl = source_list)
+     
+      # Open File
+      file_str <- paste(pathToData,"njn_fht.",formatC(conf, width = 4, flag = "0"),".", src_str,".aff", sep="")
+      src_str_alt <- toupper(src_str)
+      
+      for (i in c(2:4)) {
+        tmp_str <- unlist(strsplit(src_str_alt, ""))
+        ind <- grep("[A-Z]", tmp_str)[i]
+        src_str_alt <- paste0(c(tmp_str[1:(ind-1)], "_", tmp_str[ind:(nchar(src_str_alt))]), collapse="")
+      }
+      
+      if(strcmp(corrKey, "N-N")){      
+        key_str <- paste("/",corrKey,"/", src_str_alt,"/Gi_Cg5/Gf_Cg5/n1/px00py00pz00", sep = "")
+        d <- aff_read_key(file_str, key_str, 1024)
+        # create SpinxSpinxTime matrix n1
+        n1 <- array(d, dim = c(4, 4, 64))
+        #cf_n1 <- raw_cf_data(cf = raw_cf_meta(Time=T, dim=c(4,4)),
+        #                                    data = aperm(n1, c(3,1,2)))
+        #cf_n1 <- cvc_to_raw_cf_test(d, dims=c(4,4))
+        key_str <- paste("/",corrKey,"/", src_str_alt,"/Gi_Cg5/Gf_Cg5/n2/px00py00pz00", sep = "")
+        d <- aff_read_key(file_str, key_str, 1024)
+
+        # create SpinxSpinxTime matrix n2
+        n2 <- array(d, dim = c(4, 4, 64))
+        #cf_n2 <- raw_cf_data(cf = raw_cf_meta(Time=T, dim=c(4,4)),
+        #                                    data = aperm(n2, c(3,1,2)))
+        #cf_n2 <- cvc_to_raw_cf_test(d, dims=c(4,4))
+
+        nn <- n1 + n2
+        str(nn)
+        
+      } else if (strcmp(corrKey, "N-ubGu-N")) {
+        #diagrams <- list(array(c(1:1024), dim = c(4, 4, 64)),array(c(1:1024), dim = c(4, 4, 64)),array(c(1:1024), dim = c(4, 4, 64)),array(c(1:1024), dim = c(4, 4, 64)))
+          diagrams <- list()
+        for (t in c(1:4)) {
+           t_name <-  paste("t",toString(t), sep = "")
+          key_str <- paste("/",corrKey,"/", src_str_alt,"/Gf_Cg5/Gc_id/Gi_Cg5/QX0_QY0_QZ0/",t_name,"/px00py00pz00", sep = "")
+          d <- aff_read_key(file_str, key_str, 1024)
+          #diagrams[t_name] <- raw_cf_data(cf = raw_cf_meta(Time=T, dim=c(4,4)),
+          #                                  data = aperm(array(d, dim = c(4, 4, 64)), c(3,1,2)))
+          diagrams[t_name] <- array(d, dim = c(4, 4, 64))
+
+        }
+        nn <- Reduce('+', diagrams)
+        str(nn)
+      }
+      #is.raw_cf(nn)
+      #get_plotdata_raw_cf(nn, "both", TRUE, TRUE) 
+      # get soruce time
+      t_src <- matrix(unlist(strsplit(src_str_alt, "_")))[1]
+      t_src <- strtoi(substring(t_src, 2, nchar(t_src)))
+      
+      # add phasefactor
+      for (t in c(1:T)) {
+        del_t <- (T + t-1 - t_src) %% T
+        phasefactor <- exp(1i * 3 * pi * del_t / T)
+        nn[,,t] <- nn[,,t]*phasefactor
+        # multiply projection matrix and take trace
+        cor[t,src,(conf/24+1)] <- trace(p %*% nn[,,t])
+      } # end time loop
+      
+      # shift source location to 0
+      cor[,src,(conf/24+1)] <- shift(cor[,src,(conf/24+1)], t_src, dir = "left")
+    } # end source loop
+    
+    # plot(x = c(1:T), y = Re(cor))
+    # for (con in seq(0, n_conf, 24)) {
+    #   print(paste("conf =", (con/24+1)))
+    #   for (sr in c(1:3)) {
+    #   print(paste("source =", sr))
+    # 
+    #       print(cor[, sr, (con/24+1)])
+    # 
+    #   }
+    # }
+   
+    # mean of source contribution
+    for (t in c(1:T)) {
+      cor_mean_src[t,(conf/24+1)] <- mean(cor[t,,(conf/24+1)])
+    }
+  
+  } # end loop conf
+  
+  #look at test correlator for each source and config
+    #for (con in seq(0, n_conf, 24)) {
+      #print(paste("conf =", (con/24+1)))
+      
+      # print(paste("source =", get_source_coords_tag(c = 0, i=5, sl = source_list)))
+      # 
+      #     #print(cor[, sr, (con/24+1)])
+      #     print(cor[, 5, 1])
+      
+    #}
+      
+  for (t in c(1:T)) {
+    cor_final[t] <- mean(Re(cor_mean_src[t,]))
+    cor_std[t] <- sqrt(var(Re(cor_mean_src[t,]))/(n_conf))
+  }
+  # Symmetrize
+  for (t in c(1:T/2)) {
+    nn_cor[t] <- (cor_final[t] + cor_final[T-t])/2
+    nn_std[t] <- sqrt(cor_std[t]*cor_std[t] + cor_std[T-t]*cor_std[T-t])/2
+  }
+  return(list("cor"=nn_cor, "std"=nn_std, "T"=T, "cor_conf"=cor_mean_src))
+  # return(list("cor"=cor_final, "std"=cor_std, "T"=T))
+}
+```
+
+```{r, include=FALSE}
+#c<- analyze(corrKey = "N-N")
+```
+
+
+
+```{r, echo=FALSE}
+plotCor <- function(c){
+	df <- data.frame(t=c(1:(c$T/2)), C= c$cor, std= c$std)
+	plot(x=df$t, y=(df$C), main = "N-N Correlator",ylab = "Corr",xlab = "t", xlim=c(1,32),col="blue",  pch=1, cex.main=1.5, frame.plot=FALSE, log = "y")
+	arrows((df$t), (df$C-df$std),(df$t), (df$C+df$std), length=0.05, angle=90, code=3)
+	legend("topright",c("N-N"),cex=.8,col=c("blue"),pch=c(1))
+}
+#plotCor(c)
+```
+
+### Effective Mass
+
+We calculate the effective mass following  <https://arxiv.org/abs/1612.06963>.
+
+$m^{eff}(t,\tau)=\frac{1}{\tau}ln\left(\frac{C(t)}{C(t+\tau)}\right)\rightarrow_{t\rightarrow \infty} \frac{1}{\tau}ln(e^{E_0\tau})=E_0$
+
+```{r, echo=FALSE}
+
+colVec <- c("black", "red", "limegreen", "blue", "yellow", "cyan", "magenta", "maroon")
+
+m_eff <- function( mat, index, tau=1, tsize ){
+  i <- sample(c(1:52), size=52, replace=TRUE)
+  d <- apply ( mat[,i], c(1), mean )
+  idt1 <- ( 0 : ( tsize - tau ) ) + 1
+  idt2 <- idt1 + tau
+
+  return ( log ( d[idt1] / d[idt2] ) / tau )
+}
+
+m_boot <- function ( corr, R, tau, tsize ) {
+  r <- boot(data=corr, R=R, statistic = m_eff, tsize=tsize )
+  nt <- dim(r$t)[2]
+
+  df <- data.frame (t= 0:(nt-1), rep(tau, times=nt),m= r$t0[1:nt],std= apply (r$t, c(2), sd ), r$t0[1:nt]-apply(r$t, c(2), mean )  )
+  #write.table( df, file="m_boot.tmp", col.names=F, row.names=F )
+  return( invisible ( df ) )
+}
+# m_std <- apply(m_boot$t,2,sd, na.rm = TRUE)
+
+corr_mean <- function(mat, index) {
+#  cat ( "# [corr_mean] index = ", index, "\n" )
+#  cat ( "# [corr_mean] str ( mat ) = ", str( mat), "\n" )
+
+  return( apply ( mat[,index], c(1), mean ) )
+}
+
+
+```
+
+```{r, echo=FALSE}
+plotM <- function(c){
+	df <- m_boot(corr = c$cor_conf, R = 5000, tau = 1, tsize = c$T)
+	plot(x=df$t[1:63]+1 , y=(df$m[1:63]), main = "N-N Correlator effective mass",ylab = "m_eff",xlab = "t", xlim=c(1,30),ylim = c(.15, 1.5) ,col=colVec[1],  pch=1,cex=0.15, cex.main=1,lwd = 0.2, frame.plot=FALSE)
+	arrows((df$t[1:63]+1), Re(df$m[1:63]-df$std[1:63]),(df$t[1:63]+1), Re(df$m[1:63]+df$std[1:63]), length=0.02,lwd=.2, angle=90, code=3)
+	for (ttau in c(2:8)) {
+	   
+	  df <- m_boot(corr = c$cor_conf, R = 5000, tau = ttau, tsize = c$T)
+	  points(x=df$t[1:63]+1, y=(df$m[1:63]), pch=ttau,cex=0.15, col=colVec[ttau], lwd = 0.2)
+	  arrows((df$t[1:63]+1), Re(df$m[1:63]-df$std[1:63]),(df$t[1:63]+1), Re(df$m[1:63]+df$std[1:63]), length=0.02, angle=90, code=3, lwd = .2)
+	}
+}
+```
+## NJN-Correlator
+
+```{r, echo = FALSE}
+print("Test")
+c <- analyze(corrKey = "N-N")
+
+c <- analyze(corrKey = "N-ubGu-N")
+```
