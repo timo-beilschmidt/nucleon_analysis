@@ -68,6 +68,21 @@ cvc_to_raw_cf_test <- function(cf_dat, dims = c(1,1))
                                               data = cf_dat)
           return(cf)
 }
+read_dia <- function(key, nrDiagram=4, file_str, src_str_alt){
+
+    diagrams <- list()
+    corrKey <- key
+    for (t in c(1:nrDiagram)) {
+          t_name <-  paste("t",toString(t), sep = "")
+          key_str <- paste("/",corrKey,"/", src_str_alt,"/Gf_Cg5/Gc_id/Gi_Cg5/QX0_QY0_QZ0/",t_name,"/px00py00pz00", sep = "")
+          d <- aff_read_key(file_str, key_str, 1024)
+          #diagrams[t_name] <- raw_cf_data(cf = raw_cf_meta(Time=T, dim=c(4,4)),
+          #                                  data = aperm(array(d, dim = c(4, 4, 64)), c(3,1,2)))
+          diagrams[[t_name]] <- array(d, dim = c(4, 4, 64))
+     }
+    return(Reduce('+', diagrams))    
+}
+
 ```
 
 ## NN-Correlator
@@ -131,18 +146,17 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
         nn <- n1 + n2
         
       } else if (strcmp(corrKey, "N-ubGu-N")) {
-        #diagrams <- list(array(c(1:1024), dim = c(4, 4, 64)),array(c(1:1024), dim = c(4, 4, 64)),array(c(1:1024), dim = c(4, 4, 64)),array(c(1:1024), dim = c(4, 4, 64)))
-          diagrams <- list()
-        for (t in c(1:4)) {
-           t_name <-  paste("t",toString(t), sep = "")
-          key_str <- paste("/",corrKey,"/", src_str_alt,"/Gf_Cg5/Gc_id/Gi_Cg5/QX0_QY0_QZ0/",t_name,"/px00py00pz00", sep = "")
-          d <- aff_read_key(file_str, key_str, 1024)
-          #diagrams[t_name] <- raw_cf_data(cf = raw_cf_meta(Time=T, dim=c(4,4)),
-          #                                  data = aperm(array(d, dim = c(4, 4, 64)), c(3,1,2)))
-          diagrams[[t_name]] <- array(d, dim = c(4, 4, 64))
 
-        }
-        nn <- Reduce('+', diagrams)
+            nn <- read_dia(corrKey, nrDiagram =4 , file_str, src_str_alt)
+      } else if (strcmp(corrKey, "N-dbGd-N")) {
+
+            nn <- read_dia(corrKey, nrDiagram =2 , file_str, src_str_alt)
+
+      } else if (strcmp(corrKey, "N-J-N")) {
+            
+            nn <- read_dia("N-ubGu-N", nrDiagram =4 , file_str, src_str_alt)
+            nn <- nn + read_dia("N-dbGd-N", nrDiagram =2 , file_str, src_str_alt)
+
       }
       #is.raw_cf(nn)
       #get_plotdata_raw_cf(nn, "both", TRUE, TRUE) 
@@ -249,7 +263,7 @@ m_boot <- function ( corr, R, tau, tsize ) {
   #write.table( df, file="m_boot.tmp", col.names=F, row.names=F )
   return( invisible ( df ) )
 }
- m_std <- apply(c$cor_conf,2,sd, na.rm = TRUE)
+ #m_std <- apply(c$cor_conf,2,sd, na.rm = TRUE)
 
 corr_mean <- function(mat, index) {
 #  cat ( "# [corr_mean] index = ", index, "\n" )
@@ -284,7 +298,7 @@ First the 3pt-function correlator:
 
 
 ```{r, echo = FALSE}
-c3 <- analyze(corrKey = "N-ubGu-N")
+c3 <- analyze(corrKey = "N-J-N")
 plotCor(c3, title="3pt-function Correlator")
 ```
 
@@ -314,16 +328,21 @@ boot_Ratio <- function(c2, c3, R=5000, tau =1){
     #return( invisible ( df ) )
 }
 
+plot_Ratio <- function(c2, c3){
 
-df <- boot_Ratio(c2, c3, R=5000)
-    plot(x=df$t[1:63]+1 , y=Re(df$m[1:63]), main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-20, 50) ,col=colVec[1],  pch=1,cex=0.15, cex.main=1,lwd = 0.2, frame.plot=FALSE)
+    df <- boot_Ratio(c2, c3, R=5000)
+    plot(x=df$t[1:63]+1 , y=Re(df$m[1:63]), main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-25, 50) ,col=colVec[1],  pch=1,cex=0.15, cex.main=1,lwd = 0.2, frame.plot=FALSE)
     arrows((df$t[1:63]+1), Re(df$m[1:63]-df$std[1:63]),(df$t[1:63]+1), Re(df$m[1:63]+df$std[1:63]), length=0.02,lwd=.2, angle=90, code=3)
     for (ttau in c(2:8)) {
                    
         df <- boot_Ratio(c2,c3, R = 5000, tau = ttau)
-        points(x=df$t[1:63]+1, y=Re(df$m[1:63]), pch=ttau,cex=0.25, col=colVec[ttau], lwd = 0.3)
+        points(x=df$t[1:63]+1, y=Re(df$m[1:63]), pch=ttau,cex=0.3, col=colVec[ttau], lwd = 0.3)
         arrows((df$t[1:63]+1), Re(df$m[1:63]-df$std[1:63]),(df$t[1:63]+1), Re(df$m[1:63]+df$std[1:63]), length=0.02, angle=90, code=3, lwd = .2)
     }
+}
+
+plot_Ratio(c2, c3)
+
 
 
 ```
