@@ -16,7 +16,7 @@ library(binhf)
 library(boot)
 source('/qbigwork2/beilschmidt/code/R/get_sl.R')
 source('/qbigwork2/beilschmidt/code/R/R_gamma.R')
-options(warn = -1)#, error=recover)
+#options(warn = -1)#, error=recover)
 trace <- function(A) {
   n <- dim(A)[1] # get dimension of matrix
   tr <- 0 # initialize trace value
@@ -44,37 +44,13 @@ projector <- function(sgn, gamma0){
 
 }
 
-cvc_to_raw_cf_test <- function(cf_dat, dims = c(1,1))
-{
-      number_of_interal_dims <- prod(dims)
-
-  # idcs for real and imaginary parts
-  ridcs <- seq(1,length(cf_dat),2)
-    iidcs <- seq(2,length(cf_dat),2)
-
-    nts <- length(ridcs)/number_of_internal_dims
-
-      # turn it into a complex 4D array of with ordering of
-      # internal dimensions and time in the 'wrong' order
-      cf_dat <- array(complex(real = cf_dat[ridcs],
-                                                        imaginary = cf_dat[iidcs]),
-                                                dim = c(1,dims,nts))
-      cf_dims <- dim(cf_dat)
-        # reshape the array, ordering 'measurement' (a single one), 'time',
-        # internal dimensions
-        cf_dat <- aperm(cf_dat, c(1,length(cf_dims),2:(length(cf_dims)-1)))
-
-        cf <- raw_cf_data(cf = raw_cf_meta(Time=nts, dim=dims),
-                                              data = cf_dat)
-          return(cf)
-}
-read_dia <- function(key, nrDiagram=4, file_str, src_str_alt){
+read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, gi= "Gi_Cg5", gf = "Gf_Cg5"){
 
     diagrams <- list()
     corrKey <- key
     for (t in c(1:nrDiagram)) {
           t_name <-  paste("t",toString(t), sep = "")
-          key_str <- paste("/",corrKey,"/", src_str_alt,"/Gf_Cg5/Gc_id/Gi_Cg5/QX0_QY0_QZ0/",t_name,"/px00py00pz00", sep = "")
+          key_str <- paste("/",corrKey,"/", src_str_alt,"/",gf,"/Gc_id/",gi,"/QX0_QY0_QZ0/",t_name,"/px00py00pz00", sep = "")
           d <- aff_read_key(file_str, key_str, 1024)
           #diagrams[t_name] <- raw_cf_data(cf = raw_cf_meta(Time=T, dim=c(4,4)),
           #                                  data = aperm(array(d, dim = c(4, 4, 64)), c(3,1,2)))
@@ -87,8 +63,21 @@ read_dia <- function(key, nrDiagram=4, file_str, src_str_alt){
 
 ## NN-Correlator
 
-```{r analyze, echo=FALSE}
-analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA211a.30.32/J125-k0p2/",T=64, n_src = 16,n_conf = 1224){
+```{r analyze, echo=FALSE, results='asis'}
+##############################################################
+#Setting up variables to look at
+##############################################################
+
+proj_sign = 1
+gi= "Gi_Cg5"
+gf = "Gf_Cg5"
+
+
+###############################################################
+#main function for analyzing correlator function 
+###############################################################
+
+analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA211a.30.32/J125-k0p2/",T=64, n_src = 16,n_conf = 1224, projector_sign = 1, gi= "Gi_Cg5", gf = "Gf_Cg5"){
   # Read in data
   # n_conf <- 1224
   # n_src <- 16
@@ -107,11 +96,11 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
   Cg <- set_Cgamma_basis_matching( g=gamma_basis$tmlqcd  )
   
   # generate projektor matrix
-  p <- projector(1, g$`0`)
+  p <- projector(projector_sign, g$`0`)
   # Source coord list
   source_list <- get_source_coords_table(f = paste("/hiskp4/beilschmidt/nucleon-ff/job_submit","source_coords.cA211a.30.32.nsrc16.tab", sep = "/"))
   
-  
+ print(sprintf("%s, T=%i, n_src=%i, n_conf=%i, projector_sign = %i, Gi = %s, Gf = %s", corrKey, T, n_src, (n_conf/24+1), projector_sign, gi, gf))
   for (conf in seq(0, n_conf, 24)){
     for (src in c(1:n_src)) {
       
@@ -128,14 +117,14 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
       }
       
       if(strcmp(corrKey, "N-N")){      
-        key_str <- paste("/",corrKey,"/", src_str_alt,"/Gi_Cg5/Gf_Cg5/n1/px00py00pz00", sep = "")
+        key_str <- paste("/",corrKey,"/", src_str_alt,"/",gi,"/",gf,"/n1/px00py00pz00", sep = "")
         d <- aff_read_key(file_str, key_str, 1024)
         # create SpinxSpinxTime matrix n1
         n1 <- array(d, dim = c(4, 4, 64))
         #cf_n1 <- raw_cf_data(cf = raw_cf_meta(Time=T, dim=c(4,4)),
         #                                    data = aperm(n1, c(3,1,2)))
         #cf_n1 <- cvc_to_raw_cf_test(d, dims=c(4,4))
-        key_str <- paste("/",corrKey,"/", src_str_alt,"/Gi_Cg5/Gf_Cg5/n2/px00py00pz00", sep = "")
+        key_str <- paste("/",corrKey,"/", src_str_alt,"/",gi,"/",gf,"/n2/px00py00pz00", sep = "")
         d <- aff_read_key(file_str, key_str, 1024)
 
         # create SpinxSpinxTime matrix n2
@@ -193,29 +182,32 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
   }
   # Symmetrize
   for (t in c(1:T/2)) {
-    nn_cor[t] <- (cor_final[t] + cor_final[T-t])/2
-    nn_std[t] <- sqrt(cor_std[t]*cor_std[t] + cor_std[T-t]*cor_std[T-t])/2
-    cor_conf[t,] <- (cor_mean_src[t,] + cor_mean_src[T-t,])/2
+    nn_cor[t] <- (cor_final[t] + cor_final[T-t+1])/2
+    nn_std[t] <- sqrt(cor_std[t]*cor_std[t] + cor_std[T-t+1]*cor_std[T-t+1])/2
+    cor_conf[t,] <- (cor_mean_src[t,] + cor_mean_src[T-t+1,])/2
 
   }
+  print("Not symmetrized:")
+  print(cor_final)
+  #knitr::kable(cor_final, caption="Not symmetrized correlator")
   return(list("cor"=nn_cor, "std"=nn_std, "T"=T, "cor_conf"=cor_conf))
   # return(list("cor"=cor_final, "std"=cor_std, "T"=T))
 }
 ```
 
-```{r 2pt_calc, include=FALSE}
-c2<- analyze(corrKey = "N-N")
+```{r 2pt_calc, echo=FALSE}
+c2<- analyze(corrKey = "N-N", projector_sign = proj_sign, gi= gi, gf = gf)
 ```
 
 
 
 ```{r 2pt_plot, echo=FALSE}
-plotCor <- function(c, title="N-N Correlator"){
+plotCor <- function(c, title="N-N Correlator", legend_title="N-N"){
 	df <- data.frame(t=c(1:(c$T/2)), C= c$cor, std= c$std)
 	plot(x=df$t, y=(df$C), main = title ,ylab = "Corr",xlab = "t", xlim=c(1,32),col="blue",  pch=1, cex.main=1.5, frame.plot=FALSE, log = "y")
 	arrows((df$t), (df$C-df$std),(df$t), (df$C+df$std), length=0.05, angle=90, code=3)
-	legend("topright",c("N-N"),cex=.8,col=c("blue"),pch=c(1))
-        print(df$C)
+	legend("topright",c(legend_title),cex=.8,col=c("blue"),pch=c(1))
+        #print(df$C)
 }
 plotCor(c2)
 ```
@@ -263,17 +255,19 @@ corr_mean <- function(mat, index) {
 ```{r mass_plot, echo=FALSE}
 plotM <- function(c){
 	df <- m_boot(corr = c$cor_conf, R = 5000, tau = 1, tsize = c$T/2)
-	plot(x=df$t[1:(c$T/2-1)]+1 , y=(df$m[1:(c$T/2-1)]), main = "N-N Correlator effective mass",ylab = "m_eff",xlab = "t", xlim=c(1,30),ylim = c(.15, 1.5) ,col=colVec[1],  pch=1,cex=0.4, cex.main=1,lwd = 0.2, frame.plot=FALSE)
-	arrows((df$t[1:(c$T/2-1)]+1), Re(df$m[1:(c$T/2-1)]-df$std[1:(c$T/2-1)]),(df$t[1:(c$T/2-1)]+1), Re(df$m[1:(c$T/2-1)]+df$std[1:(c$T/2-1)]), length=0.02,lwd=.2, angle=90, code=3)
+	plot(x=df$t[1:(c$T/2-1)]+1 , y=(df$m[1:(c$T/2-1)]), main = "N-N Correlator effective mass",ylab = "m_eff",xlab = "t", xlim=c(1,30),ylim = c(.15, 1.5) ,col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE)
+	arrows((df$t[1:(c$T/2-1)]+1), Re(df$m[1:(c$T/2-1)]-df$std[1:(c$T/2-1)]),(df$t[1:(c$T/2-1)]+1), Re(df$m[1:(c$T/2-1)]+df$std[1:(c$T/2-1)]), length=0.05,lwd=.3, angle=90, code=3)
 	for (ttau in c(2:8)) {
 	   
 	  df <- m_boot(corr = c$cor_conf, R = 5000, tau = ttau, tsize = c$T/2)
-	  points(x=df$t[1:(c$T/2-1)]+1, y=(df$m[1:(c$T/2-1)]), pch=ttau,cex=0.4, col=colVec[ttau], lwd = 0.3)
-	  arrows((df$t[1:(c$T/2-1)]+1), Re(df$m[1:(c$T/2-1)]-df$std[1:(c$T/2-1)]),(df$t[1:(c$T/2-1)]+1), Re(df$m[1:(c$T/2-1)]+df$std[1:(c$T/2-1)]), length=0.02, angle=90, code=3, lwd = .2)
+	  points(x=df$t[1:(c$T/2-1)]+1, y=(df$m[1:(c$T/2-1)]), pch=ttau,cex=0.8, col=colVec[ttau], lwd = 0.3)
+	  arrows((df$t[1:(c$T/2-1)]+1), Re(df$m[1:(c$T/2-1)]-df$std[1:(c$T/2-1)]),(df$t[1:(c$T/2-1)]+1), Re(df$m[1:(c$T/2-1)]+df$std[1:(c$T/2-1)]), length=0.05, angle=90, code=3, lwd = .3)
 	}
-	legend("topleft",c("tau = 1","tau = 2","tau = 3","tau = 4","tau = 5","tau = 6","tau = 7","tau = 8"),cex=.4,col=colVec,pch=c(1:8))
+	legend("topleft",c("tau = 1","tau = 2","tau = 3","tau = 4","tau = 5","tau = 6","tau = 7","tau = 8"),cex=.8,col=colVec,pch=c(1:8))
 }
 plotM(c2)
+
+#analyze(corrKey = "N-N")
 ```
 
 \pagebreak
@@ -285,13 +279,16 @@ First the 3pt-function correlator:
 
 
 ```{r 3pt, echo = FALSE}
-c3 <- analyze(corrKey = "N-J-N")
-plotCor(c3, title="3pt-function Correlator")
+c3 <- analyze(corrKey = "N-J-N", projector_sign = proj_sign, gi= gi, gf = gf)
+plotCor(c3, title="3pt-function Correlator", legend_title="N-J-N")
 ```
+\pagebreak
+
+###Ratio-Plot
+
 
 $\left. \frac{\partial m_\lambda^{eff}(t,\tau)}{\partial \lambda} \right|_{\lambda=0}= \frac{1}{\tau}\left( \frac{\partial_\lambda C_\lambda(t)}{C(t)}- \frac{\partial_\lambda C_\lambda(t+\tau)}{C(t+\tau)}   \right)_{\lambda=0}$
 
-Plotting the ratio of 2pt- and 3pt-function:
 
 
 ```{r ratio_plot, echo=FALSE}
@@ -316,15 +313,15 @@ boot_Ratio <- function(c2, c3, R=5000, tau =1){
 }
 plot_Ratio <- function(c2, c3){
     df <- boot_Ratio(c2, c3, R=5000)
-    plot(x=df$t[1:(c2$T/2-1)]+1 , y=Re(df$m[1:(c2$T/2-1)]), main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-25, 50) ,col=colVec[1],  pch=1,cex=0.4, cex.main=1,lwd = 0.2, frame.plot=FALSE)
-    arrows((df$t[1:(c2$T/2-1)]+1), Re(df$m[1:(c2$T/2-1)]-df$std[1:(c2$T/2-1)]),(df$t[1:(c2$T/2-1)]+1), Re(df$m[1:(c2$T/2-1)]+df$std[1:(c2$T/2-1)]), length=0.02,lwd=.2, angle=90, code=3)
+    plot(x=df$t[1:(c2$T/2-1)]+1 , y=Re(df$m[1:(c2$T/2-1)]), main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-25, 50) ,col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE)
+    arrows((df$t[1:(c2$T/2-1)]+1), Re(df$m[1:(c2$T/2-1)]-df$std[1:(c2$T/2-1)]),(df$t[1:(c2$T/2-1)]+1), Re(df$m[1:(c2$T/2-1)]+df$std[1:(c2$T/2-1)]), length=0.05,lwd=.3, angle=90, code=3)
     print(sprintf("tau = %i", 1))
    print(Re(df$m))
     for (ttau in c(2:8)) {
                    
         df <- boot_Ratio(c2,c3, R = 5000, tau = ttau)
-        points(x=df$t[1:(c2$T/2-1)]+1, y=Re(df$m[1:(c2$T/2-1)]), pch=ttau,cex=0.4, col=colVec[ttau], lwd = 0.3)
-        arrows((df$t[1:(c2$T/2-1)]+1), Re(df$m[1:(c2$T/2-1)]-df$std[1:(c2$T/2-1)]),(df$t[1:(c2$T/2-1)]+1), Re(df$m[1:(c2$T/2-1)]+df$std[1:(c2$T/2-1)]), length=0.02, angle=90, code=3, lwd = .2)
+        points(x=df$t[1:(c2$T/2-1)]+1, y=Re(df$m[1:(c2$T/2-1)]), pch=ttau,cex=0.8, col=colVec[ttau], lwd = 0.3)
+        arrows((df$t[1:(c2$T/2-1)]+1), Re(df$m[1:(c2$T/2-1)]-df$std[1:(c2$T/2-1)]),(df$t[1:(c2$T/2-1)]+1), Re(df$m[1:(c2$T/2-1)]+df$std[1:(c2$T/2-1)]), length=0.05, angle=90, code=3, lwd = .3)
     print(sprintf("tau = %i", ttau))
    print(Re(df$m))
     }
