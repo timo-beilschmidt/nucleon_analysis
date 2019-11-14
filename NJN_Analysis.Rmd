@@ -86,10 +86,10 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
   cor <- array(0, dim = c(T, n_src, (n_conf/24+1)))
   cor_final <- array(0, dim = T)
   cor_std <- array(0, dim = T)
-  nn_cor <- array(0, dim = T/2)
-  nn_std <- array(0, dim = T/2)
+  #nn_cor <- array(0, dim = T/2)
+  #nn_std <- array(0, dim = T/2)
   cor_mean_src <- array(0, dim = c(T, (n_conf/24+1)))
-  cor_conf <- array(0, dim = c(T/2, (n_conf/24+1)))
+  #cor_conf <- array(0, dim = c(T/2, (n_conf/24+1)))
   #load gamma matrices
   g <- set_gamma_basis_all(g=gamma_basis$tmlqcd)
   #load Cxgamma, but without i factor and multiply with i
@@ -181,17 +181,17 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
     cor_std[t] <- sqrt(var(Re(cor_mean_src[t,]))/(n_conf))
   }
   # Symmetrize
-  for (t in c(1:T/2)) {
-    nn_cor[t] <- (cor_final[t] + cor_final[T-t+1])/2
-    nn_std[t] <- sqrt(cor_std[t]*cor_std[t] + cor_std[T-t+1]*cor_std[T-t+1])/2
-    cor_conf[t,] <- (cor_mean_src[t,] + cor_mean_src[T-t+1,])/2
+  #for (t in c(1:T/2)) {
+   # nn_cor[t] <- (cor_final[t] + cor_final[T-t+1])/2
+    #nn_std[t] <- sqrt(cor_std[t]*cor_std[t] + cor_std[T-t+1]*cor_std[T-t+1])/2
+    #cor_conf[t,] <- (cor_mean_src[t,] + cor_mean_src[T-t+1,])/2
 
-  }
+  #}
   print("Not symmetrized:")
   print(cor_final)
   #knitr::kable(cor_final, caption="Not symmetrized correlator")
-  return(list("cor"=nn_cor, "std"=nn_std, "T"=T, "cor_conf"=cor_conf))
-  # return(list("cor"=cor_final, "std"=cor_std, "T"=T))
+  #return(list("cor"=nn_cor, "std"=nn_std, "T"=T, "cor_conf"=cor_conf))
+  return(list("cor"=cor_final, "std"=cor_std, "cor_conf"=cor_mean_src , "T"=T))
 }
 ```
 
@@ -203,7 +203,7 @@ c2<- analyze(corrKey = "N-N", projector_sign = proj_sign, gi= gi, gf = gf)
 
 ```{r 2pt_plot, echo=FALSE}
 plotCor <- function(c, title="N-N Correlator", legend_title="N-N"){
-	df <- data.frame(t=c(1:(c$T/2)), C= c$cor, std= c$std)
+	df <- data.frame(t=c(1:(c$T)), C= c$cor, std= c$std)
 	plot(x=df$t, y=(df$C), main = title ,ylab = "Corr",xlab = "t", xlim=c(1,32),col="blue",  pch=1, cex.main=1.5, frame.plot=FALSE, log = "y")
 	arrows((df$t), (df$C-df$std),(df$t), (df$C+df$std), length=0.05, angle=90, code=3)
 	legend("topright",c(legend_title),cex=.8,col=c("blue"),pch=c(1))
@@ -254,14 +254,14 @@ corr_mean <- function(mat, index) {
 
 ```{r mass_plot, echo=FALSE}
 plotM <- function(c){
-	df <- m_boot(corr = c$cor_conf, R = 5000, tau = 1, tsize = c$T/2)
-	plot(x=df$t[1:(c$T/2-1)]+1 , y=(df$m[1:(c$T/2-1)]), main = "N-N Correlator effective mass",ylab = "m_eff",xlab = "t", xlim=c(1,30),ylim = c(.15, 1.5) ,col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE)
-	arrows((df$t[1:(c$T/2-1)]+1), Re(df$m[1:(c$T/2-1)]-df$std[1:(c$T/2-1)]),(df$t[1:(c$T/2-1)]+1), Re(df$m[1:(c$T/2-1)]+df$std[1:(c$T/2-1)]), length=0.05,lwd=.3, angle=90, code=3)
+	df <- m_boot(corr = c$cor_conf, R = 5000, tau = 1, tsize = c$T)
+	plot(x=df$t[1:(c$T-1)]+1 , y=(df$m[1:(c$T-1)]), main = "N-N Correlator effective mass",ylab = "m_eff",xlab = "t", xlim=c(1,30),ylim = c(.15, 1.5) ,col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE)
+	arrows((df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]-df$std[1:(c$T-1)]),(df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]+df$std[1:(c$T-1)]), length=0.05,lwd=.3, angle=90, code=3)
 	for (ttau in c(2:8)) {
 	   
-	  df <- m_boot(corr = c$cor_conf, R = 5000, tau = ttau, tsize = c$T/2)
-	  points(x=df$t[1:(c$T/2-1)]+1, y=(df$m[1:(c$T/2-1)]), pch=ttau,cex=0.8, col=colVec[ttau], lwd = 0.3)
-	  arrows((df$t[1:(c$T/2-1)]+1), Re(df$m[1:(c$T/2-1)]-df$std[1:(c$T/2-1)]),(df$t[1:(c$T/2-1)]+1), Re(df$m[1:(c$T/2-1)]+df$std[1:(c$T/2-1)]), length=0.05, angle=90, code=3, lwd = .3)
+	  df <- m_boot(corr = c$cor_conf, R = 5000, tau = ttau, tsize = c$T)
+	  points(x=df$t[1:(c$T-1)]+1, y=(df$m[1:(c$T-1)]), pch=ttau,cex=0.8, col=colVec[ttau], lwd = 0.3)
+	  arrows((df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]-df$std[1:(c$T-1)]),(df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]+df$std[1:(c$T-1)]), length=0.05, angle=90, code=3, lwd = .3)
 	}
 	legend("topleft",c("tau = 1","tau = 2","tau = 3","tau = 4","tau = 5","tau = 6","tau = 7","tau = 8"),cex=.8,col=colVec,pch=c(1:8))
 }
@@ -297,7 +297,7 @@ ratio <- function( c2pt, index, c3pt, tau=1 ){
   i <- sample(c(1:52), size=52, replace=TRUE)
   c2 <- apply(c2pt$cor_conf[,i], c(1), mean)
   c3 <- apply ( c3pt$cor_conf[,i], c(1), mean )
-  idt1 <- ( 0 : ( c2pt$T/2 - tau ) ) + 1
+  idt1 <- ( 0 : ( c2pt$T - tau ) ) + 1
   idt2 <- idt1 + tau
 
   return ( ( Re(c3[idt1]) / Re(c2[idt1]) - Re(c3[idt2])/Re(c2[idt2]) ) / tau )
@@ -313,15 +313,15 @@ boot_Ratio <- function(c2, c3, R=5000, tau =1){
 }
 plot_Ratio <- function(c2, c3){
     df <- boot_Ratio(c2, c3, R=5000)
-    plot(x=df$t[1:(c2$T/2-1)]+1 , y=Re(df$m[1:(c2$T/2-1)]), main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-25, 50) ,col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE)
-    arrows((df$t[1:(c2$T/2-1)]+1), Re(df$m[1:(c2$T/2-1)]-df$std[1:(c2$T/2-1)]),(df$t[1:(c2$T/2-1)]+1), Re(df$m[1:(c2$T/2-1)]+df$std[1:(c2$T/2-1)]), length=0.05,lwd=.3, angle=90, code=3)
+    plot(x=df$t[1:(c2$T-1)]+1 , y=Re(df$m[1:(c2$T-1)]), main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-25, 50) ,col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE)
+    arrows((df$t[1:(c2$T-1)]+1), Re(df$m[1:(c2$T-1)]-df$std[1:(c2$T-1)]),(df$t[1:(c2$T-1)]+1), Re(df$m[1:(c2$T-1)]+df$std[1:(c2$T-1)]), length=0.05,lwd=.3, angle=90, code=3)
     print(sprintf("tau = %i", 1))
    print(Re(df$m))
     for (ttau in c(2:8)) {
                    
         df <- boot_Ratio(c2,c3, R = 5000, tau = ttau)
-        points(x=df$t[1:(c2$T/2-1)]+1, y=Re(df$m[1:(c2$T/2-1)]), pch=ttau,cex=0.8, col=colVec[ttau], lwd = 0.3)
-        arrows((df$t[1:(c2$T/2-1)]+1), Re(df$m[1:(c2$T/2-1)]-df$std[1:(c2$T/2-1)]),(df$t[1:(c2$T/2-1)]+1), Re(df$m[1:(c2$T/2-1)]+df$std[1:(c2$T/2-1)]), length=0.05, angle=90, code=3, lwd = .3)
+        points(x=df$t[1:(c2$T-1)]+1, y=Re(df$m[1:(c2$T-1)]), pch=ttau,cex=0.8, col=colVec[ttau], lwd = 0.3)
+        arrows((df$t[1:(c2$T-1)]+1), Re(df$m[1:(c2$T-1)]-df$std[1:(c2$T-1)]),(df$t[1:(c2$T-1)]+1), Re(df$m[1:(c2$T-1)]+df$std[1:(c2$T-1)]), length=0.05, angle=90, code=3, lwd = .3)
     print(sprintf("tau = %i", ttau))
    print(Re(df$m))
     }
