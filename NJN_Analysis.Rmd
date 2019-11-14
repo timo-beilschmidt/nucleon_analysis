@@ -68,7 +68,6 @@ read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, gi= "Gi_Cg5", gf =
 #Setting up variables to look at
 ##############################################################
 
-proj_sign = 1
 gi= "Gi_Cg5"
 gf = "Gf_Cg5"
 
@@ -77,13 +76,14 @@ gf = "Gf_Cg5"
 #main function for analyzing correlator function 
 ###############################################################
 
-analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA211a.30.32/J125-k0p2/",T=64, n_src = 16,n_conf = 1224, projector_sign = 1, gi= "Gi_Cg5", gf = "Gf_Cg5"){
+analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA211a.30.32/J125-k0p2/",T=64, n_src = 16,n_conf = 1224, gi= "Gi_Cg5", gf = "Gf_Cg5"){
   # Read in data
   # n_conf <- 1224
   # n_src <- 16
   # T <- 64
   #conf <- 792
   cor <- array(0, dim = c(T, n_src, (n_conf/24+1)))
+  cor_m <- array(0, dim = c(T, n_src, (n_conf/24+1)))
   cor_final <- array(0, dim = T)
   cor_std <- array(0, dim = T)
   #nn_cor <- array(0, dim = T/2)
@@ -96,11 +96,12 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
   Cg <- set_Cgamma_basis_matching( g=gamma_basis$tmlqcd  )
   
   # generate projektor matrix
-  p <- projector(projector_sign, g$`0`)
+  proj_p <- projector(1,g$`0`)
+  proj_m <- projector(-1,g$`0`)
   # Source coord list
   source_list <- get_source_coords_table(f = paste("/hiskp4/beilschmidt/nucleon-ff/job_submit","source_coords.cA211a.30.32.nsrc16.tab", sep = "/"))
   
- print(sprintf("%s, T=%i, n_src=%i, n_conf=%i, projector_sign = %i, Gi = %s, Gf = %s", corrKey, T, n_src, (n_conf/24+1), projector_sign, gi, gf))
+ print(sprintf("%s, T=%i, n_src=%i, n_conf=%i, Gi = %s, Gf = %s", corrKey, T, n_src, (n_conf/24+1),gi, gf))
   for (conf in seq(0, n_conf, 24)){
     for (src in c(1:n_src)) {
       
@@ -160,43 +161,46 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
         phasefactor <- exp(1i * 3 * pi * del_t / T)
         nn[,,t] <- nn[,,t]*phasefactor
         # multiply projection matrix and take trace
-        cor[t,src,(conf/24+1)] <- trace(p %*% nn[,,t])
+        cor[t,src,(conf/24+1)] <- trace(proj_p %*% nn[,,t])
+        cor_m[t,src,(conf/24+1)] <- trace(proj_m %*% nn[,,t])
       } # end time loop
       
       # shift source location to 0
       cor[,src,(conf/24+1)] <- shift(cor[,src,(conf/24+1)], t_src, dir = "left")
+      cor_m[,src,(conf/24+1)] <- shift(cor_m[,src,(conf/24+1)], t_src, dir = "left")
     } # end source loop
     
    
-    # mean of source contribution
-    for (t in c(1:T)) {
-      cor_mean_src[t,(conf/24+1)] <- mean(cor[t,,(conf/24+1)])
-    }
   
   } # end loop conf
-  
-      
-  for (t in c(1:T)) {
-    cor_final[t] <- mean(Re(cor_mean_src[t,]))
-    cor_std[t] <- sqrt(var(Re(cor_mean_src[t,]))/(n_conf))
-  }
-  # Symmetrize
-  #for (t in c(1:T/2)) {
-   # nn_cor[t] <- (cor_final[t] + cor_final[T-t+1])/2
-    #nn_std[t] <- sqrt(cor_std[t]*cor_std[t] + cor_std[T-t+1]*cor_std[T-t+1])/2
-    #cor_conf[t,] <- (cor_mean_src[t,] + cor_mean_src[T-t+1,])/2
+ 
+  cor_m <- -1*Rev(cor_m, margin=1)
+#
+#  print("Not symmetrised positive parity:")
+#  print(apply(Re(apply(cor, MARGIN=c(1,3), mean)), MARGIN=1, mean))
+#
+#  print("Not symmetrised negative parity:")
+#  print(apply(Re(apply(cor_m, MARGIN=c(1,3), mean)), MARGIN=1, mean))
 
-  #}
-  print("Not symmetrized:")
+  cor <- cor + cor_m
+
+  cor_mean_src <- apply(cor, MARGIN=c(1,3), mean)
+
+  cor_final <- apply(cor_mean_src, MARGIN=1, FUN=function(x)
+                                                {
+                                                    mean(Re(x))
+                                                 }  )
+  cor_std <- apply(cor_mean_src, MARGIN=1, FUN= function(x){
+                                                    sqrt(var(Re(x)))/(n_conf/24+1)
+                                                 })
+  print("Symmetrized:")
   print(cor_final)
-  #knitr::kable(cor_final, caption="Not symmetrized correlator")
-  #return(list("cor"=nn_cor, "std"=nn_std, "T"=T, "cor_conf"=cor_conf))
   return(list("cor"=cor_final, "std"=cor_std, "cor_conf"=cor_mean_src , "T"=T))
 }
 ```
 
 ```{r 2pt_calc, echo=FALSE}
-c2<- analyze(corrKey = "N-N", projector_sign = proj_sign, gi= gi, gf = gf)
+c2<- analyze(corrKey = "N-N", gi= gi, gf = gf)
 ```
 
 
@@ -279,7 +283,7 @@ First the 3pt-function correlator:
 
 
 ```{r 3pt, echo = FALSE}
-c3 <- analyze(corrKey = "N-J-N", projector_sign = proj_sign, gi= gi, gf = gf)
+c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf)
 plotCor(c3, title="3pt-function Correlator", legend_title="N-J-N")
 ```
 \pagebreak
