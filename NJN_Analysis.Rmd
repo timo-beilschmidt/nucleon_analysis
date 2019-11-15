@@ -14,9 +14,10 @@ library(Raff)
 library(pracma)
 library(binhf)
 library(boot)
+library(DescTools)
 source('/qbigwork2/beilschmidt/code/R/get_sl.R')
 source('/qbigwork2/beilschmidt/code/R/R_gamma.R')
-#options(warn = -1)#, error=recover)
+options(warn = -1)#, error=recover)
 trace <- function(A) {
   n <- dim(A)[1] # get dimension of matrix
   tr <- 0 # initialize trace value
@@ -70,6 +71,8 @@ read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, gi= "Gi_Cg5", gf =
 
 gi= "Gi_Cg5"
 gf = "Gf_Cg5"
+#gi= "Gi_Cg5gt"
+#gf = "Gf_Cg5gt"
 
 
 ###############################################################
@@ -182,7 +185,7 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
 #  print("Not symmetrised negative parity:")
 #  print(apply(Re(apply(cor_m, MARGIN=c(1,3), mean)), MARGIN=1, mean))
 
-  cor <- cor + cor_m
+  cor <- (cor + cor_m)/2
 
   cor_mean_src <- apply(cor, MARGIN=c(1,3), mean)
 
@@ -317,7 +320,8 @@ boot_Ratio <- function(c2, c3, R=5000, tau =1){
 }
 plot_Ratio <- function(c2, c3){
     df <- boot_Ratio(c2, c3, R=5000)
-    plot(x=df$t[1:(c2$T-1)]+1 , y=Re(df$m[1:(c2$T-1)]), main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-25, 50) ,col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE)
+    plot(x=df$t[1:(c2$T-1)]+1 , y=Re(df$m[1:(c2$T-1)]), main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-35, 20) 
+         ,col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE)
     arrows((df$t[1:(c2$T-1)]+1), Re(df$m[1:(c2$T-1)]-df$std[1:(c2$T-1)]),(df$t[1:(c2$T-1)]+1), Re(df$m[1:(c2$T-1)]+df$std[1:(c2$T-1)]), length=0.05,lwd=.3, angle=90, code=3)
     print(sprintf("tau = %i", 1))
    print(Re(df$m))
