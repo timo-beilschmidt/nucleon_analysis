@@ -73,18 +73,22 @@ gi= "Gi_Cg5"
 gf = "Gf_Cg5"
 #gi= "Gi_Cg5gt"
 #gf = "Gf_Cg5gt"
+max_conf <- 1760
+stepwidth <- 4
+test <- FALSE
 
+if(test){
+    max_conf <-480
+    stepwidth <- 24
+}
+
+num_conf <- max_conf/stepwidth+1
 
 ###############################################################
 #main function for analyzing correlator function 
 ###############################################################
 
 analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA211a.30.32/J125-k0p2/",T=64, n_src = 16,n_conf = 1224, gi= "Gi_Cg5", gf = "Gf_Cg5", step = 24){
-  # Read in data
-  # n_conf <- 1224
-  # n_src <- 16
-  # T <- 64
-  #conf <- 792
   cor <- array(0, dim = c(T, n_src, (n_conf/step+1)))
   cor_m <- array(0, dim = c(T, n_src, (n_conf/step+1)))
   cor_final <- array(0, dim = T)
@@ -187,7 +191,6 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
 #  print(apply(Re(apply(cor_m, MARGIN=c(1,3), mean)), MARGIN=1, mean))
 
   cor <- (cor + cor_m)/2
-
   cor_mean_src <- apply(cor, MARGIN=c(1,3), mean)
 
   cor_final <- apply(cor_mean_src, MARGIN=1, FUN=function(x)
@@ -204,7 +207,7 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
 ```
 
 ```{r 2pt_calc, echo=FALSE}
-c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=1760, step = 4)
+c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth)
 ```
 
 
@@ -212,8 +215,8 @@ c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=1760, step = 4)
 ```{r 2pt_plot, echo=FALSE}
 plotCor <- function(c, title="N-N Correlator", legend_title="N-N"){
 	df <- data.frame(t=c(1:(c$T)), C= c$cor, std= c$std)
-	plot(x=df$t, y=(df$C), main = title ,ylab = "Corr",xlab = "t", xlim=c(1,32),col="blue",  pch=1, cex.main=1.5, frame.plot=FALSE, log = "y")
-	arrows((df$t), (df$C-df$std),(df$t), (df$C+df$std), length=0.05, angle=90, code=3)
+	plotwitherror(x=df$t, y=(df$C), dy=df$std, main = title ,ylab = "Corr",xlab = "t", xlim=c(1,32),col="blue",  pch=1, cex.main=1.5, frame.plot=FALSE, log = "y", length=0.05 , code =3)
+	#arrows((df$t), (df$C-df$std),(df$t), (df$C+df$std), length=0.05, angle=90, code=3)
 	legend("topright",c(legend_title),cex=.8,col=c("blue"),pch=c(1))
         #print(df$C)
 }
@@ -232,7 +235,7 @@ $m^{eff}(t,\tau)=\frac{1}{\tau}ln\left(\frac{C(t)}{C(t+\tau)}\right)\rightarrow_
 colVec <- c("black", "red", "limegreen", "blue", "yellow", "cyan", "magenta", "maroon")
 
 m_eff <- function( mat, index, tau=1, tsize ){
-  i <- sample(c(1:52), size=52, replace=TRUE)
+  i <- sample(c(1:num_conf), size=num_conf, replace=TRUE)
   d <- apply ( mat[,i], c(1), mean )
   idt1 <- ( 0 : ( tsize - tau ) ) + 1
   idt2 <- idt1 + tau
@@ -250,14 +253,6 @@ m_boot <- function ( corr, R, tau, tsize ) {
 }
  #m_std <- apply(c$cor_conf,2,sd, na.rm = TRUE)
 
-corr_mean <- function(mat, index) {
-#  cat ( "# [corr_mean] index = ", index, "\n" )
-#  cat ( "# [corr_mean] str ( mat ) = ", str( mat), "\n" )
-
-  return( apply ( mat[,index], c(1), mean ) )
-}
-
-
 ```
 
 ```{r mass_plot, echo=FALSE}
@@ -274,8 +269,6 @@ plotM <- function(c){
 	legend("topleft",c("tau = 1","tau = 2","tau = 3","tau = 4","tau = 5","tau = 6","tau = 7","tau = 8"),cex=.8,col=colVec,pch=c(1:8))
 }
 plotM(c2)
-
-#analyze(corrKey = "N-N")
 ```
 
 \pagebreak
@@ -287,7 +280,7 @@ First the 3pt-function correlator:
 
 
 ```{r 3pt, echo = FALSE}
-c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=1760, step = 4)
+c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth)
 plotCor(c3, title="3pt-function Correlator", legend_title="N-J-N")
 ```
 \pagebreak
@@ -302,7 +295,7 @@ $\left. \frac{\partial m_\lambda^{eff}(t,\tau)}{\partial \lambda} \right|_{\lamb
 ```{r ratio_plot, echo=FALSE}
 
 ratio <- function( c2pt, index, c3pt, tau=1 ){
-  i <- sample(c(1:52), size=52, replace=TRUE)
+  i <- sample(c(1:num_conf), size=num_conf, replace=TRUE)
   c2 <- apply(c2pt$cor_conf[,i], c(1), mean)
   c3 <- apply ( c3pt$cor_conf[,i], c(1), mean )
   idt1 <- ( 0 : ( c2pt$T - tau ) ) + 1
