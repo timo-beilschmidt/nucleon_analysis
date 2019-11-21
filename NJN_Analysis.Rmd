@@ -69,10 +69,10 @@ read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, gi= "Gi_Cg5", gf =
 #Setting up variables to look at
 ##############################################################
 
-gi= "Gi_Cg5"
-gf = "Gf_Cg5"
-#gi= "Gi_Cg5gt"
-#gf = "Gf_Cg5gt"
+#gi= "Gi_Cg5"
+#gf = "Gf_Cg5"
+gi= "Gi_Cg5gt"
+gf = "Gf_Cg5gt"
 max_conf <- 1760
 stepwidth <- 4
 test <- FALSE
@@ -308,33 +308,65 @@ boot_Ratio <- function(c2, c3, R=5000, tau =1){
     
     r <- boot(data = c2, R=R, statistic = ratio, c3pt=c3, tau=tau)
     nt <- dim(r$t)[2]
-    df <- data.frame (t= 0:(nt-1), rep(tau, times=nt),m= r$t0[1:nt],std= apply (r$t, c(2), sd ), r$t0[1:nt]-apply(r$t, c(2), mean )  )
+    df <- data.frame (t= 0:(nt-1), tau=rep(tau, times=nt),m= r$t0[1:nt],std= apply (r$t, c(2), sd ), r$t0[1:nt]-apply(r$t, c(2), mean )  )
     #write.table( df, file="m_boot.tmp", col.names=F, row.names=F )
     return( invisible ( df ) )
 }
 plot_Ratio <- function(c2, c3){
+    if(gi== "Gi_Cg5"){
+        ylim <- c(-35, 20)
+    }else{
+        ylim <- c(-70, 25)
+    }
     df <- boot_Ratio(c2, c3, R=5000)
-    plot(x=df$t[1:(c2$T-1)]+1 , y=Re(df$m[1:(c2$T-1)]), main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-35, 20) 
+    plot(x=df$t[1:(c2$T-1)]+1 , y=Re(df$m[1:(c2$T-1)]), main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = ylim 
          ,col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE)
     arrows((df$t[1:(c2$T-1)]+1), Re(df$m[1:(c2$T-1)]-df$std[1:(c2$T-1)]),(df$t[1:(c2$T-1)]+1), Re(df$m[1:(c2$T-1)]+df$std[1:(c2$T-1)]), length=0.05,lwd=.3, angle=90, code=3)
-    print(sprintf("tau = %i", 1))
-   print(Re(df$m))
+   # print(sprintf("tau = %i", 1))
+   #print(Re(df$m))
+   data <- list()
+   data$tau1 <- df
     for (ttau in c(2:8)) {
                    
         df <- boot_Ratio(c2,c3, R = 5000, tau = ttau)
         points(x=df$t[1:(c2$T-1)]+1, y=Re(df$m[1:(c2$T-1)]), pch=ttau,cex=0.8, col=colVec[ttau], lwd = 0.3)
         arrows((df$t[1:(c2$T-1)]+1), Re(df$m[1:(c2$T-1)]-df$std[1:(c2$T-1)]),(df$t[1:(c2$T-1)]+1), Re(df$m[1:(c2$T-1)]+df$std[1:(c2$T-1)]), length=0.05, angle=90, code=3, lwd = .3)
-    print(sprintf("tau = %i", ttau))
-   print(Re(df$m))
+   # print(sprintf("tau = %i", ttau))
+   #print(Re(df$m))
+   data[[sprintf("tau%i", ttau)]] <- df
     }
 	legend("topleft",c("tau = 1","tau = 2","tau = 3","tau = 4","tau = 5","tau = 6","tau = 7","tau = 8"),cex=.8,col=colVec,pch=c(1:8))
-    return(invisible(df))
+    return(invisible(data))
 }
 
 plotData <- plot_Ratio(c2, c3)
 
 #Re(plotData$m)
+pointswitherror <- function(x, y, dy, col="black", ...) {
+      points(x=x, y=y, col=col, ...)
+      arrows(x0=x, y0=y-dy, x1=x, y1=y+dy, length=0.05,
+                  angle=90, code=3, col=col, lw = 0.3)
+}
+tau_plot <- function(data, n_points = 32, n_tau = 8){
+    tau_array <- array(0, dim=c(n_points,n_tau, 2))
+    for(tau in c(1:n_tau)){
+         temp <- as.matrix(data[[sprintf("tau%i", tau)]]["m"])
+         tau_array[,tau, 1] <- temp[1:n_points]
+         temp <- as.matrix(data[[sprintf("tau%i", tau)]]["std"])
+         tau_array[,tau, 2] <- temp[1:n_points]
 
+    }
+    if(gi== "Gi_Cg5"){
+        ylim <- c(-35, 20)
+    }else{
+        ylim <- c(-70, 20)
+    }
+    plotwitherror(x=c(1:8),y= tau_array[1,,1], ylim=ylim, dy = tau_array[1,,2], ylab = "FHT-ratio",  xlab = "tau")
+    for(time in c(2:n_points)){
+        pointswitherror( x=c(1:8),y= tau_array[time,,1], dy = tau_array[time,,2])
+    }
+}
+tau_plot(plotData)
 
 
 ```
