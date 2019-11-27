@@ -45,13 +45,13 @@ projector <- function(sgn, gamma0){
 
 }
 
-read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, gi= "Gi_Cg5", gf = "Gf_Cg5"){
+read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, gi= "Gi_Cg5", gf = "Gf_Cg5", mom_tag){
 
     diagrams <- list()
     corrKey <- key
     for (t in c(1:nrDiagram)) {
           t_name <-  paste("t",toString(t), sep = "")
-          key_str <- paste("/",corrKey,"/", src_str_alt,"/",gf,"/Gc_id/",gi,"/QX0_QY0_QZ0/",t_name,"/px00py00pz00", sep = "")
+          key_str <- paste("/",corrKey,"/", src_str_alt,"/",gf,"/Gc_id/",gi,"/QX0_QY0_QZ0/",t_name,"/", mom_tag , sep = "")
           d <- aff_read_key(file_str, key_str, 1024)
           #diagrams[t_name] <- raw_cf_data(cf = raw_cf_meta(Time=T, dim=c(4,4)),
           #                                  data = aperm(array(d, dim = c(4, 4, 64)), c(3,1,2)))
@@ -69,26 +69,29 @@ read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, gi= "Gi_Cg5", gf =
 #Setting up variables to look at
 ##############################################################
 
-#gi= "Gi_Cg5"
-#gf = "Gf_Cg5"
-gi= "Gi_Cg5gt"
-gf = "Gf_Cg5gt"
+gi= "Gi_Cg5"
+gf = "Gf_Cg5"
+#gi= "Gi_Cg5gt"
+#gf = "Gf_Cg5gt"
 max_conf <- 1760
 stepwidth <- 4
 test <- FALSE
+plotAll <- TRUE
 
 if(test){
-    max_conf <-480
+    max_conf <-240
     stepwidth <- 24
 }
 
 num_conf <- max_conf/stepwidth+1
 
+mom_tag <- "px00py00pz00"
+
 ###############################################################
 #main function for analyzing correlator function 
 ###############################################################
 
-analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA211a.30.32/J125-k0p2/",T=64, n_src = 16,n_conf = 1224, gi= "Gi_Cg5", gf = "Gf_Cg5", step = 24){
+analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA211a.30.32/J125-k0p2/",T=64, n_src = 16,n_conf = 1224, gi= "Gi_Cg5", gf = "Gf_Cg5", step = 24, mom_tag = "px00py00pz00"){
   cor <- array(0, dim = c(T, n_src, (n_conf/step+1)))
   cor_m <- array(0, dim = c(T, n_src, (n_conf/step+1)))
   cor_final <- array(0, dim = T)
@@ -126,14 +129,14 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
       }
       
       if(strcmp(corrKey, "N-N")){      
-        key_str <- paste("/",corrKey,"/", src_str_alt,"/",gi,"/",gf,"/n1/px00py00pz00", sep = "")
+        key_str <- paste("/",corrKey,"/", src_str_alt,"/",gi,"/",gf,"/n1/", mom_tag, sep = "")
         d <- aff_read_key(file_str, key_str, 1024)
         # create SpinxSpinxTime matrix n1
         n1 <- array(d, dim = c(4, 4, 64))
         #cf_n1 <- raw_cf_data(cf = raw_cf_meta(Time=T, dim=c(4,4)),
         #                                    data = aperm(n1, c(3,1,2)))
         #cf_n1 <- cvc_to_raw_cf_test(d, dims=c(4,4))
-        key_str <- paste("/",corrKey,"/", src_str_alt,"/",gi,"/",gf,"/n2/px00py00pz00", sep = "")
+        key_str <- paste("/",corrKey,"/", src_str_alt,"/",gi,"/",gf,"/n2/", mom_tag, sep = "")
         d <- aff_read_key(file_str, key_str, 1024)
 
         # create SpinxSpinxTime matrix n2
@@ -146,15 +149,15 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
         
       } else if (strcmp(corrKey, "N-ubGu-N")) {
 
-            nn <- read_dia(corrKey, nrDiagram =4 , file_str, src_str_alt)
+            nn <- read_dia(corrKey, nrDiagram =4 , file_str, src_str_alt, mom_tag=mom_tag)
       } else if (strcmp(corrKey, "N-dbGd-N")) {
 
-            nn <- read_dia(corrKey, nrDiagram =2 , file_str, src_str_alt)
+            nn <- read_dia(corrKey, nrDiagram =2 , file_str, src_str_alt, mom_tag=mom_tag)
 
       } else if (strcmp(corrKey, "N-J-N")) {
             
-            nn <- read_dia("N-ubGu-N", nrDiagram =4 , file_str, src_str_alt)
-            nn <- nn + read_dia("N-dbGd-N", nrDiagram =2 , file_str, src_str_alt)
+            nn <- read_dia("N-ubGu-N", nrDiagram =4 , file_str, src_str_alt, mom_tag=mom_tag)
+            nn <- nn + read_dia("N-dbGd-N", nrDiagram =2 , file_str, src_str_alt, mom_tag=mom_tag)
 
       }
       #is.raw_cf(nn)
@@ -207,7 +210,7 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
 ```
 
 ```{r 2pt_calc, echo=FALSE}
-c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth)
+#c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag)
 ```
 
 
@@ -220,7 +223,7 @@ plotCor <- function(c, title="N-N Correlator", legend_title="N-N"){
 	legend("topright",c(legend_title),cex=.8,col=c("blue"),pch=c(1))
         #print(df$C)
 }
-plotCor(c2)
+#plotCor(c2)
 ```
 \pagebreak
 
@@ -268,7 +271,7 @@ plotM <- function(c){
 	}
 	legend("topleft",c("tau = 1","tau = 2","tau = 3","tau = 4","tau = 5","tau = 6","tau = 7","tau = 8"),cex=.8,col=colVec,pch=c(1:8))
 }
-plotM(c2)
+#plotM(c2)
 ```
 
 \pagebreak
@@ -280,8 +283,8 @@ First the 3pt-function correlator:
 
 
 ```{r 3pt, echo = FALSE}
-c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth)
-plotCor(c3, title="3pt-function Correlator", legend_title="N-J-N")
+#c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag)
+#plotCor(c3, title="3pt-function Correlator", legend_title="N-J-N")
 ```
 \pagebreak
 
@@ -339,7 +342,7 @@ plot_Ratio <- function(c2, c3){
     return(invisible(data))
 }
 
-plotData <- plot_Ratio(c2, c3)
+#plotData <- plot_Ratio(c2, c3)
 
 #Re(plotData$m)
 pointswitherror <- function(x, y, dy, col="black", ...) {
@@ -366,8 +369,59 @@ tau_plot <- function(data, n_points = 32, n_tau = 8){
         pointswitherror( x=c(1:8),y= tau_array[time,,1], dy = tau_array[time,,2])
     }
 }
-tau_plot(plotData)
+#tau_plot(plotData)
+```
+```{r plots, echo=FALSE}
+plotAndCalc <- function(gi, gf, mom_tag, test){
+    pdf(sprintf("NJN_%s_%s_%s_%i.pdf", gi, gf, mom_tag, test ))
+    c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag)
 
+c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag)
 
+    plotCor(c2)
+    plotCor(c3, title="3pt-function Correlator", legend_title="N-J-N")
+
+    plotM(c2)
+    plotData <- plot_Ratio(c2,c3)
+    tau_plot(plotData)
+    dev.off()
+}
+if(plotAll){
+
+    mom_tag <- list(    "px01py01pz-01",
+                        "px01py01pz01",
+                        "px01py-01pz-01",
+                        "px01py-01pz01",
+                        "px-01py01pz-01",
+                        "px-01py01pz01",
+                        "px-01py-01pz-01",
+                        "px-01py-01pz01",
+                        "px01py01pz00",
+                        "px01py-01pz00",
+                        "px-01py01pz00",
+                        "px-01py-01pz00",
+                        "px01py00pz-01",
+                        "px01py00pz01",
+                        "px-01py00pz-01",
+                        "px-01py00pz01",
+                        "px01py00pz00",
+                        "px-01py00pz00",
+                        "px00py01pz-01",
+                        "px00py01pz01",
+                        "px00py-01pz-01",
+                        "px00py-01pz01",
+                        "px00py01pz00",
+                        "px00py-01pz00",
+                        "px00py00pz-01",
+                        "px00py00pz01",
+                        "px00py00pz00"
+                                              )
+    gi <- list(c("Gi_Cg5","Gf_Cg5"),c( "Gi_Cg5gt","Gf_Cg5gt"))
+    for(p_tag in mom_tag){
+        for( g in gi){
+            plotAndCalc(g[1], g[2], p_tag, test)
+        }
+    }
+}
 ```
 
