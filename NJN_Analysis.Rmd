@@ -69,21 +69,23 @@ read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, gi= "Gi_Cg5", gf =
 #Setting up variables to look at
 ##############################################################
 
-gi= "Gi_Cg5"
-gf = "Gf_Cg5"
-#gi= "Gi_Cg5gt"
-#gf = "Gf_Cg5gt"
-max_conf <- 1760
+#gi= "Gi_Cg5"
+#gf = "Gf_Cg5"
+gi= "Gi_Cg5gt"
+gf = "Gf_Cg5gt"
+max_conf <- 940
+min_conf <- 4
 stepwidth <- 4
-test <- FALSE
-plotAll <- TRUE
+test <- TRUE
+plotAll <- FALSE
 
 if(test){
-    max_conf <-240
+    max_conf <-244
+    min_conf <- 4
     stepwidth <- 24
 }
 
-num_conf <- max_conf/stepwidth+1
+num_conf <- (max_conf-min_conf)/stepwidth+1
 
 mom_tag <- "px00py00pz00"
 
@@ -91,15 +93,18 @@ mom_tag <- "px00py00pz00"
 #main function for analyzing correlator function 
 ###############################################################
 
-analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA211a.30.32/J125-k0p2/",T=64, n_src = 16,n_conf = 1224, gi= "Gi_Cg5", gf = "Gf_Cg5", step = 24, mom_tag = "px00py00pz00"){
-  cor <- array(0, dim = c(T, n_src, (n_conf/step+1)))
-  cor_m <- array(0, dim = c(T, n_src, (n_conf/step+1)))
+analyze <- function(corrKey = "N-N",T=64, n_src = 16,n_conf = 1224, path_letter = "b", gi= "Gi_Cg5", gf = "Gf_Cg5", step = 24, mom_tag = "px00py00pz00", conf_start=0){
+
+  
+  pathToData<-sprintf("/hiskp4/petschlies/nucleon-ff/cA211%s.30.32/J125-k0p2/", path_letter)
+  cor <- array(0, dim = c(T, n_src, ((n_conf-conf_start)/step+1)))
+  cor_m <- array(0, dim = c(T, n_src, ((n_conf-conf_start)/step+1)))
   cor_final <- array(0, dim = T)
   cor_std <- array(0, dim = T)
   #nn_cor <- array(0, dim = T/2)
   #nn_std <- array(0, dim = T/2)
-  cor_mean_src <- array(0, dim = c(T, (n_conf/step+1)))
-  #cor_conf <- array(0, dim = c(T/2, (n_conf/step+1)))
+  cor_mean_src <- array(0, dim = c(T, ((n_conf-conf_start)/step+1)))
+  #cor_conf <- array(0, dim = c(T/2, ((n_conf-conf_start)/step+1)))
   #load gamma matrices
   g <- set_gamma_basis_all(g=gamma_basis$tmlqcd)
   #load Cxgamma, but without i factor and multiply with i
@@ -110,10 +115,16 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
   proj_m <- projector(-1,g$`0`)
   # Source coord list
   #"/hiskp4/petschlies/nucleon-ff/cA211a.30.32"
-  source_list <- get_source_coords_table(f = paste(pathToData,"source_coords.cA211a.30.32.nsrc16.all.tab", sep = ""))
+  if(strcmp(path_letter, "a")){
+
+        end_str = ".all.tab"
+} else {
+    end_str = ".tab"
+}
+  source_list <- get_source_coords_table(f = paste(pathToData,"source_coords.cA211",path_letter,".30.32.nsrc16",end_str, sep = ""))
   
- print(sprintf("%s, T=%i, n_src=%i, n_conf=%i, Gi = %s, Gf = %s", corrKey, T, n_src, (n_conf/step+1),gi, gf))
-  for (conf in seq(0, n_conf, step)){
+ print(sprintf("%s, T=%i, n_src=%i, n_conf=%i, Gi = %s, Gf = %s", corrKey, T, n_src, ((n_conf-conf_start)/step+1),gi, gf))
+  for (conf in seq(conf_start, n_conf, step)){
     for (src in c(1:n_src)) {
       
       src_str <- get_source_coords_tag(c = conf, i=src, sl = source_list)
@@ -128,7 +139,7 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
         src_str_alt <- paste0(c(tmp_str[1:(ind-1)], "_", tmp_str[ind:(nchar(src_str_alt))]), collapse="")
       }
       
-      if(strcmp(corrKey, "N-N")){      
+      if(strcmp(corrKey, "N-N")){
         key_str <- paste("/",corrKey,"/", src_str_alt,"/",gi,"/",gf,"/n1/", mom_tag, sep = "")
         d <- aff_read_key(file_str, key_str, 1024)
         # create SpinxSpinxTime matrix n1
@@ -154,12 +165,17 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
 
             nn <- read_dia(corrKey, nrDiagram =2 , file_str, src_str_alt, mom_tag=mom_tag)
 
-      } else if (strcmp(corrKey, "N-J-N")) {
+      } else if (strcmp(corrKey, "N-J-N") & strcmp(path_letter, "a")) {
             
             nn <- read_dia("N-ubGu-N", nrDiagram =4 , file_str, src_str_alt, mom_tag=mom_tag)
             nn <- nn + read_dia("N-dbGd-N", nrDiagram =2 , file_str, src_str_alt, mom_tag=mom_tag)
 
+      } else if (strcmp(corrKey, "N-J-N") & strcmp(path_letter, "b")){
+            
+          nn <- read_dia("N-qbGq-N", nrDiagram =6 , file_str, src_str_alt, mom_tag=mom_tag)
+
       }
+
       #is.raw_cf(nn)
       #get_plotdata_raw_cf(nn, "both", TRUE, TRUE) 
       # get soruce time
@@ -172,13 +188,13 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
         phasefactor <- exp(1i * 3 * pi * del_t / T)
         nn[,,t] <- nn[,,t]*phasefactor
         # multiply projection matrix and take trace
-        cor[t,src,(conf/step+1)] <- trace(proj_p %*% nn[,,t])
-        cor_m[t,src,(conf/step+1)] <- trace(proj_m %*% nn[,,t])
+        cor[t,src,((conf-conf_start)/step+1)] <- trace(proj_p %*% nn[,,t])
+        cor_m[t,src,((conf-conf_start)/step+1)] <- trace(proj_m %*% nn[,,t])
       } # end time loop
       
       # shift source location to 0
-      cor[,src,(conf/step+1)] <- shift(cor[,src,(conf/step+1)], t_src, dir = "left")
-      cor_m[,src,(conf/step+1)] <- shift(cor_m[,src,(conf/step+1)], t_src, dir = "left")
+      cor[,src,((conf-conf_start)/step+1)] <- shift(cor[,src,((conf-conf_start)/step+1)], t_src, dir = "left")
+      cor_m[,src,((conf-conf_start)/step+1)] <- shift(cor_m[,src,((conf-conf_start)/step+1)], t_src, dir = "left")
     } # end source loop
     
    
@@ -201,7 +217,7 @@ analyze <- function(corrKey = "N-N",pathToData="/hiskp4/petschlies/nucleon-ff/cA
                                                     mean(Re(x))
                                                  }  )
   cor_std <- apply(cor_mean_src, MARGIN=1, FUN= function(x){
-                                                    sqrt(var(Re(x)))/(n_conf/step+1)
+                                                    sqrt(var(Re(x)))/((n_conf-conf_start)/step+1)
                                                  })
   print("Symmetrized:")
   print(cor_final)
@@ -263,13 +279,20 @@ plotM <- function(c){
 	df <- m_boot(corr = c$cor_conf, R = 5000, tau = 1, tsize = c$T)
 	plot(x=df$t[1:(c$T-1)]+1 , y=(df$m[1:(c$T-1)]), main = "N-N Correlator effective mass",ylab = "m_eff",xlab = "t", xlim=c(1,30),ylim = c(.15, 1.5) ,col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE)
 	arrows((df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]-df$std[1:(c$T-1)]),(df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]+df$std[1:(c$T-1)]), length=0.05,lwd=.3, angle=90, code=3)
+        data <- list()
+        data$tau1 <- df
 	for (ttau in c(2:8)) {
 	   
 	  df <- m_boot(corr = c$cor_conf, R = 5000, tau = ttau, tsize = c$T)
 	  points(x=df$t[1:(c$T-1)]+1, y=(df$m[1:(c$T-1)]), pch=ttau,cex=0.8, col=colVec[ttau], lwd = 0.3)
 	  arrows((df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]-df$std[1:(c$T-1)]),(df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]+df$std[1:(c$T-1)]), length=0.05, angle=90, code=3, lwd = .3)
+   data[[sprintf("tau%i", ttau)]] <- df
 	}
 	legend("topleft",c("tau = 1","tau = 2","tau = 3","tau = 4","tau = 5","tau = 6","tau = 7","tau = 8"),cex=.8,col=colVec,pch=c(1:8))
+   #y <- Re(data$tau1$m[5:15])
+   # fit <- summary(nls(y ~ a))
+   #lines(x=df$t[5:15]+1, y = rep(fit$coefficients[1], 11))
+   return(invisible(data))
 }
 #plotM(c2)
 ```
@@ -374,18 +397,21 @@ tau_plot <- function(data, n_points = 32, n_tau = 8){
 ```{r plots, echo=FALSE}
 plotAndCalc <- function(gi, gf, mom_tag, test){
     pdf(sprintf("NJN_%s_%s_%s_%i.pdf", gi, gf, mom_tag, test ))
-    c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag)
-
-c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag)
+    c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag, path_letter = "a", conf_start = min_conf)
+    # cf_orig(cf=c2)
+    # cf_meta(.cf=try_cf, Time = c2$T, symmetrised=TRUE)
+    c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag, path_letter = "b", conf_start = min_conf)
 
     plotCor(c2)
     plotCor(c3, title="3pt-function Correlator", legend_title="N-J-N")
 
-    plotM(c2)
+    m_data <- plotM(c2)
     plotData <- plot_Ratio(c2,c3)
     tau_plot(plotData)
     dev.off()
+    return(invisible(list("m_data"=m_data, "ratioData" = plotData)))
 }
+    d <- list()
 if(plotAll){
 
     mom_tag <- list(    "px01py01pz-01",
@@ -419,9 +445,11 @@ if(plotAll){
     gi <- list(c("Gi_Cg5","Gf_Cg5"),c( "Gi_Cg5gt","Gf_Cg5gt"))
     for(p_tag in mom_tag){
         for( g in gi){
-            plotAndCalc(g[1], g[2], p_tag, test)
+            d[[sprintf("%s_%s_%s", g[1], g[2], p_tag)]] <- plotAndCalc(g[1], g[2], p_tag, test)
         }
     }
+} else {
+    d[[sprintf("%s_%s_%s", gi, gf, mom_tag)]] <- plotAndCalc(gi, gf, mom_tag, test)
 }
 ```
 
