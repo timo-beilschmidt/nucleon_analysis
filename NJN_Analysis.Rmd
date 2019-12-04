@@ -73,11 +73,11 @@ read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, gi= "Gi_Cg5", gf =
 #gf = "Gf_Cg5"
 gi= "Gi_Cg5gt"
 gf = "Gf_Cg5gt"
-max_conf <- 940
+max_conf <- 1856
 min_conf <- 4
 stepwidth <- 4
 test <- TRUE
-plotAll <- FALSE
+plotAll <- TRUE
 
 if(test){
     max_conf <-244
@@ -160,19 +160,19 @@ analyze <- function(corrKey = "N-N",T=64, n_src = 16,n_conf = 1224, path_letter 
         
       } else if (strcmp(corrKey, "N-ubGu-N")) {
 
-            nn <- read_dia(corrKey, nrDiagram =4 , file_str, src_str_alt, mom_tag=mom_tag)
+            nn <- read_dia(corrKey, nrDiagram =4 , file_str, src_str_alt, mom_tag=mom_tag, gi=gi, gf=gf)
       } else if (strcmp(corrKey, "N-dbGd-N")) {
 
-            nn <- read_dia(corrKey, nrDiagram =2 , file_str, src_str_alt, mom_tag=mom_tag)
+            nn <- read_dia(corrKey, nrDiagram =2 , file_str, src_str_alt, mom_tag=mom_tag, gi=gi, gf=gf)
 
       } else if (strcmp(corrKey, "N-J-N") & strcmp(path_letter, "a")) {
             
-            nn <- read_dia("N-ubGu-N", nrDiagram =4 , file_str, src_str_alt, mom_tag=mom_tag)
-            nn <- nn + read_dia("N-dbGd-N", nrDiagram =2 , file_str, src_str_alt, mom_tag=mom_tag)
+            nn <- read_dia("N-ubGu-N", nrDiagram =4 , file_str, src_str_alt, mom_tag=mom_tag, gi=gi, gf=gf)
+            nn <- nn + read_dia("N-dbGd-N", nrDiagram =2 , file_str, src_str_alt, mom_tag=mom_tag, gi=gi, gf=gf)
 
       } else if (strcmp(corrKey, "N-J-N") & strcmp(path_letter, "b")){
             
-          nn <- read_dia("N-qbGq-N", nrDiagram =6 , file_str, src_str_alt, mom_tag=mom_tag)
+          nn <- read_dia("N-qbGq-N", nrDiagram =6 , file_str, src_str_alt, mom_tag=mom_tag, gi=gi, gf=gf)
 
       }
 
@@ -209,19 +209,23 @@ analyze <- function(corrKey = "N-N",T=64, n_src = 16,n_conf = 1224, path_letter 
 #  print("Not symmetrised negative parity:")
 #  print(apply(Re(apply(cor_m, MARGIN=c(1,3), mean)), MARGIN=1, mean))
 
-  cor <- (cor + cor_m)/2
-  cor_mean_src <- apply(cor, MARGIN=c(1,3), mean)
+  #cor <- (cor + cor_m)/2
+  #cor_mean_src <- apply(cor, MARGIN=c(1,3), mean)
 
-  cor_final <- apply(cor_mean_src, MARGIN=1, FUN=function(x)
-                                                {
-                                                    mean(Re(x))
-                                                 }  )
-  cor_std <- apply(cor_mean_src, MARGIN=1, FUN= function(x){
-                                                    sqrt(var(Re(x)))/((n_conf-conf_start)/step+1)
-                                                 })
-  print("Symmetrized:")
-  print(cor_final)
-  return(list("cor"=cor_final, "std"=cor_std, "cor_conf"=cor_mean_src , "T"=T))
+  #cor_final <- apply(cor_mean_src, MARGIN=1, FUN=function(x)
+     #                                           {
+    #                                                mean(Re(x))
+   #                                              }  )
+  #cor_std <- apply(cor_mean_src, MARGIN=1, FUN= function(x){
+       #                                             sqrt(var(Re(x)))/((n_conf-conf_start)/step+1)
+      #                                           })
+ # print("Symmetrized:")
+ # print(cor_final)
+
+  cf <- cf_meta(.cf=cf_orig(cf=Re(t(cor_mean_src[1:33,]))), T=64, symmetrised=TRUE)
+  cf <- bootstrap.cf(cf)
+  #return(list("cor"=cor_final, "std"=cor_std, "cor_conf"=cor_mean_src , "T"=T, "cf"=cf))
+  return(cf)
 }
 ```
 
@@ -233,6 +237,7 @@ analyze <- function(corrKey = "N-N",T=64, n_src = 16,n_conf = 1224, path_letter 
 
 ```{r 2pt_plot, echo=FALSE}
 plotCor <- function(c, title="N-N Correlator", legend_title="N-N"){
+    
 	df <- data.frame(t=c(1:(c$T)), C= c$cor, std= c$std)
 	plotwitherror(x=df$t, y=(df$C), dy=df$std, main = title ,ylab = "Corr",xlab = "t", xlim=c(1,32),col="blue",  pch=1, cex.main=1.5, frame.plot=FALSE, log = "y", length=0.05 , code =3)
 	#arrows((df$t), (df$C-df$std),(df$t), (df$C+df$std), length=0.05, angle=90, code=3)
@@ -402,16 +407,17 @@ plotAndCalc <- function(gi, gf, mom_tag, test){
     # cf_meta(.cf=try_cf, Time = c2$T, symmetrised=TRUE)
     c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag, path_letter = "b", conf_start = min_conf)
 
-    plotCor(c2)
-    plotCor(c3, title="3pt-function Correlator", legend_title="N-J-N")
+    plot.cf(c2, log="y")
+    plot.cf(c3, main="3pt-function Correlator", log="y") #legend_title="N-J-N")
 
-    m_data <- plotM(c2)
-    plotData <- plot_Ratio(c2,c3)
-    tau_plot(plotData)
+    plot.effectivemass(bootstrap.effectivemass(c2, type="log"))
+    #m_data <- plotM(c2)
+    #plotData <- plot_Ratio(c2,c3)
+    #tau_plot(plotData)
     dev.off()
-    return(invisible(list("m_data"=m_data, "ratioData" = plotData)))
+    #return(invisible(list("m_data"=m_data, "ratioData" = plotData)))
 }
-    d <- list()
+    #d <- list()
 if(plotAll){
 
     mom_tag <- list(    "px01py01pz-01",
@@ -445,11 +451,15 @@ if(plotAll){
     gi <- list(c("Gi_Cg5","Gf_Cg5"),c( "Gi_Cg5gt","Gf_Cg5gt"))
     for(p_tag in mom_tag){
         for( g in gi){
-            d[[sprintf("%s_%s_%s", g[1], g[2], p_tag)]] <- plotAndCalc(g[1], g[2], p_tag, test)
+           # d[[sprintf("%s_%s_%s", g[1], g[2], p_tag)]] <- plotAndCalc(g[1], g[2], p_tag, test)
+plotAndCalc(g[1], g[2], p_tag, test)
+
         }
     }
 } else {
-    d[[sprintf("%s_%s_%s", gi, gf, mom_tag)]] <- plotAndCalc(gi, gf, mom_tag, test)
+    #d[[sprintf("%s_%s_%s", gi, gf, mom_tag)]] <- plotAndCalc(gi, gf, mom_tag, test)
+plotAndCalc(gi, gf, mom_tag, test)
+
 }
 ```
 
