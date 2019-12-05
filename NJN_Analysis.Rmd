@@ -76,7 +76,7 @@ gf = "Gf_Cg5"
 max_conf <- 1856
 min_conf <- 4
 stepwidth <- 4
-test <- TRUE
+test <- FALSE
 plotAll <- TRUE
 
 if(test){
@@ -390,7 +390,7 @@ tau_plot <- function(data, n_points = 32, n_tau = 8){
     if(gi== "Gi_Cg5"){
         ylim <- c(-35, 20)
     }else{
-        ylim <- c(-70, 20)
+        ylim <- c(-70, 50)
     }
     plotwitherror(x=c(1:8),y= tau_array[1,,1], ylim=ylim, dy = tau_array[1,,2], ylab = "FHT-ratio",  xlab = "tau")
     for(time in c(2:n_points)){
