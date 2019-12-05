@@ -123,7 +123,7 @@ analyze <- function(corrKey = "N-N",T=64, n_src = 16,n_conf = 1224, path_letter 
 }
   source_list <- get_source_coords_table(f = paste(pathToData,"source_coords.cA211",path_letter,".30.32.nsrc16",end_str, sep = ""))
   
- print(sprintf("%s, T=%i, n_src=%i, n_conf=%i, Gi = %s, Gf = %s", corrKey, T, n_src, ((n_conf-conf_start)/step+1),gi, gf))
+ print(sprintf("%s, T=%i, n_src=%i, n_conf=%i, Gi = %s, Gf = %s, mom = %s", corrKey, T, n_src, ((n_conf-conf_start)/step+1),gi, gf, mom_tag))
   for (conf in seq(conf_start, n_conf, step)){
     for (src in c(1:n_src)) {
       
@@ -327,8 +327,8 @@ $\left. \frac{\partial m_\lambda^{eff}(t,\tau)}{\partial \lambda} \right|_{\lamb
 
 ratio <- function( c2pt, index, c3pt, tau=1 ){
   i <- sample(c(1:num_conf), size=num_conf, replace=TRUE)
-  c2 <- apply(c2pt$cor_conf[,i], c(1), mean)
-  c3 <- apply ( c3pt$cor_conf[,i], c(1), mean )
+  c2 <- apply(c2pt$cf[i,], c(1), mean)
+  c3 <- apply ( c3pt$cf[i,], c(1), mean )
   idt1 <- ( 0 : ( c2pt$T - tau ) ) + 1
   idt2 <- idt1 + tau
 
@@ -414,7 +414,7 @@ plotAndCalc <- function(gi, gf, mom_tag, test){
     plot.effectivemass(meff)
     print(summary.effectivemassfit(meff))
     #m_data <- plotM(c2)
-    #plotData <- plot_Ratio(c2,c3)
+    plotData <- plot_Ratio(c2,c3)
     #tau_plot(plotData)
     dev.off()
     #return(invisible(list("m_data"=m_data, "ratioData" = plotData)))
