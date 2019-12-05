@@ -69,10 +69,10 @@ read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, gi= "Gi_Cg5", gf =
 #Setting up variables to look at
 ##############################################################
 
-#gi= "Gi_Cg5"
-#gf = "Gf_Cg5"
-gi= "Gi_Cg5gt"
-gf = "Gf_Cg5gt"
+gi= "Gi_Cg5"
+gf = "Gf_Cg5"
+#gi= "Gi_Cg5gt"
+#gf = "Gf_Cg5gt"
 max_conf <- 1856
 min_conf <- 4
 stepwidth <- 4
@@ -209,8 +209,8 @@ analyze <- function(corrKey = "N-N",T=64, n_src = 16,n_conf = 1224, path_letter 
 #  print("Not symmetrised negative parity:")
 #  print(apply(Re(apply(cor_m, MARGIN=c(1,3), mean)), MARGIN=1, mean))
 
-  #cor <- (cor + cor_m)/2
-  #cor_mean_src <- apply(cor, MARGIN=c(1,3), mean)
+  cor <- (cor + cor_m)/2
+  cor_mean_src <- apply(cor, MARGIN=c(1,3), mean)
 
   #cor_final <- apply(cor_mean_src, MARGIN=1, FUN=function(x)
      #                                           {
@@ -409,13 +409,16 @@ plotAndCalc <- function(gi, gf, mom_tag, test){
 
     plot.cf(c2, log="y")
     plot.cf(c3, main="3pt-function Correlator", log="y") #legend_title="N-J-N")
-
-    plot.effectivemass(bootstrap.effectivemass(c2, type="log"))
+    meff <- bootstrap.effectivemass(c2, type="log")
+    meff <- fit.effectivemass(meff, t1=3, t2 = 13)
+    plot.effectivemass(meff)
+    print(summary.effectivemassfit(meff))
     #m_data <- plotM(c2)
     #plotData <- plot_Ratio(c2,c3)
     #tau_plot(plotData)
     dev.off()
     #return(invisible(list("m_data"=m_data, "ratioData" = plotData)))
+    return(invisible(list("c2"=c2, "c3"=c3)))
 }
     #d <- list()
 if(plotAll){
@@ -452,13 +455,13 @@ if(plotAll){
     for(p_tag in mom_tag){
         for( g in gi){
            # d[[sprintf("%s_%s_%s", g[1], g[2], p_tag)]] <- plotAndCalc(g[1], g[2], p_tag, test)
-plotAndCalc(g[1], g[2], p_tag, test)
+            cf <- plotAndCalc(g[1], g[2], p_tag, test)
 
         }
     }
 } else {
     #d[[sprintf("%s_%s_%s", gi, gf, mom_tag)]] <- plotAndCalc(gi, gf, mom_tag, test)
-plotAndCalc(gi, gf, mom_tag, test)
+            cf <- plotAndCalc(gi, gf, mom_tag, test)
 
 }
 ```
