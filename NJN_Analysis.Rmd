@@ -15,6 +15,7 @@ library(pracma)
 library(binhf)
 library(boot)
 library(DescTools)
+library(stringr)
 source('/qbigwork2/beilschmidt/code/R/get_sl.R')
 source('/qbigwork2/beilschmidt/code/R/R_gamma.R')
 options(warn = -1)#, error=recover)
@@ -45,13 +46,13 @@ projector <- function(sgn, gamma0){
 
 }
 
-read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, gi= "Gi_Cg5", gf = "Gf_Cg5", mom_tag){
+read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, .gi= "Gi_Cg5", .gf = "Gf_Cg5", .mom_tag){
 
     diagrams <- list()
     corrKey <- key
     for (t in c(1:nrDiagram)) {
           t_name <-  paste("t",toString(t), sep = "")
-          key_str <- paste("/",corrKey,"/", src_str_alt,"/",gf,"/Gc_id/",gi,"/QX0_QY0_QZ0/",t_name,"/", mom_tag , sep = "")
+          key_str <- paste("/",corrKey,"/", src_str_alt,"/",.gf,"/Gc_id/",.gi,"/QX0_QY0_QZ0/",t_name,"/", .mom_tag , sep = "")
           d <- aff_read_key(file_str, key_str, 1024)
           #diagrams[t_name] <- raw_cf_data(cf = raw_cf_meta(Time=T, dim=c(4,4)),
           #                                  data = aperm(array(d, dim = c(4, 4, 64)), c(3,1,2)))
@@ -76,11 +77,11 @@ gf = "Gf_Cg5"
 max_conf <- 1756
 min_conf <- 4
 stepwidth <- 4
-test <- FALSE
+test <- TRUE
 plotAll <- TRUE
 
 if(test){
-    max_conf <-244
+    max_conf <-100
     min_conf <- 4
     stepwidth <- 24
 }
@@ -149,19 +150,19 @@ analyze <- function(corrKey = "N-N",T=64, n_src = 16,n_conf = 1224, path_letter 
         
       } else if (strcmp(corrKey, "N-ubGu-N")) {
 
-            nn <- read_dia(corrKey, nrDiagram =4 , file_str, src_str_alt, mom_tag=mom_tag, gi=gi, gf=gf)
+            nn <- read_dia(corrKey, nrDiagram =4 , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
       } else if (strcmp(corrKey, "N-dbGd-N")) {
 
-            nn <- read_dia(corrKey, nrDiagram =2 , file_str, src_str_alt, mom_tag=mom_tag, gi=gi, gf=gf)
+            nn <- read_dia(corrKey, nrDiagram =2 , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
 
       } else if (strcmp(corrKey, "N-J-N") & strcmp(path_letter, "a")) {
             
-            nn <- read_dia("N-ubGu-N", nrDiagram =4 , file_str, src_str_alt, mom_tag=mom_tag, gi=gi, gf=gf)
-            nn <- nn + read_dia("N-dbGd-N", nrDiagram =2 , file_str, src_str_alt, mom_tag=mom_tag, gi=gi, gf=gf)
+            nn <- read_dia("N-ubGu-N", nrDiagram =4 , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
+            nn <- nn + read_dia("N-dbGd-N", nrDiagram =2 , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
 
       } else if (strcmp(corrKey, "N-J-N") & strcmp(path_letter, "b")){
             
-          nn <- read_dia("N-qbGq-N", nrDiagram =6 , file_str, src_str_alt, mom_tag=mom_tag, gi=gi, gf=gf)
+          nn <- read_dia("N-qbGq-N", nrDiagram =6 , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
 
       }
 
@@ -319,7 +320,7 @@ boot_Ratio <- function(c2, c3, R=5000, tau =1){
     #write.table( df, file="m_boot.tmp", col.names=F, row.names=F )
     return( invisible ( df ) )
 }
-plot_Ratio <- function(c2, c3){
+ratioPlot <- function(c2, c3){
     if(gi== "Gi_Cg5"){
         ylim <- c(-40, 30)
     }else{
@@ -344,7 +345,7 @@ plot_Ratio <- function(c2, c3){
     return(invisible(data))
 }
 
-#plotData <- plot_Ratio(c2, c3)
+#plotData <- io(c2, c3)
 
 #Re(plotData$m)
 pointswitherror <- function(x, y, dy, col="black", ...) {
@@ -376,16 +377,16 @@ tau_plot <- function(data, n_points = 32, n_tau = 8){
 ```{r plots, echo=FALSE}
 plotAndCalc <- function(gi, gf, mom_tag, test){
     pdf(sprintf("NJN_%s_%s_%s_%i.pdf", gi, gf, mom_tag, test ))
-    c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag, path_letter = "a", conf_start = min_conf)
+    c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag, path_letter = "b", conf_start = min_conf)
     c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag, path_letter = "b", conf_start = min_conf)
 
     plot.cf(c2, main="2pt-function correlator", log="y", ylab="C", xlab="t")
     plot.cf(c3, main="3pt-function correlator", log="y", ylab="C", xlab="t") #legend_title="N-J-N")
     meff <- bootstrap.effectivemass(c2, type="log")
-    meff <- fit.effectivemass(meff, t1=3, t2 = 13)
+    meff <- fit.effectivemass(meff, t1=4, t2 = 13)
     plot.effectivemass(meff, main="Effective mass plot", ylab="meff", xlab="t")
     print(summary.effectivemassfit(meff))
-    plotData <- plot_Ratio(c2,c3)
+    plotData <- ratioPlot(c2,c3)
     tau_plot(plotData)
     dev.off()
     #return(invisible(list("m_data"=m_data, "ratioData" = plotData)))
@@ -410,24 +411,50 @@ if(plotAll){
                         "px01py00pz01",
                         "px-01py00pz-01",
                         "px-01py00pz01",
-                        "px01py00pz00",
-                        "px-01py00pz00",
                         "px00py01pz-01",
                         "px00py01pz01",
                         "px00py-01pz-01",
                         "px00py-01pz01",
+                        "px01py00pz00",
+                        "px-01py00pz00",
                         "px00py01pz00",
                         "px00py-01pz00",
                         "px00py00pz-01",
                         "px00py00pz01",
                         "px00py00pz00"
                                               )
-    gi <- list(c("Gi_Cg5","Gf_Cg5"),c( "Gi_Cg5gt","Gf_Cg5gt"))
-    for(p_tag in mom_tag){
-        for( g in gi){
+    gi <- list(c("Gi_Cg5","Gf_Cg5"),c( "Gi_Cg5gt","Gf_Cg5gt"),c( "Gi_Cgt","Gf_Cgt"),c( "Gi_C","Gf_C"))
+        cf_2pt <- list()
+        cf_3pt <- list()
+        for(p_tag in mom_tag){
+            num_i <- str_count(p_tag, "1")
+            factor <-1
+            if (num_i==1){
+                factor <- 1./6
+            }else if (num_i==2){
+                factor<- 1./12.
+            } else if (num_i==3){
+                factor <- 1./8
+            }
+
+            p_tot_tag <- sprintf("p_tot%i", num_i)
+            if(!length(cf_2pt[[p_tot_tag]])){
+                cf_2pt[[p_tot_tag]] <- list()
+                cf_3pt[[p_tot_tag]] <- list()
+
+            }
+            for( g in gi){
            # d[[sprintf("%s_%s_%s", g[1], g[2], p_tag)]] <- plotAndCalc(g[1], g[2], p_tag, test)
             cf <- plotAndCalc(g[1], g[2], p_tag, test)
+            if(!length(cf_2pt[[p_tot_tag]][[g[1]]])){
+                cf_2pt[[p_tot_tag]][[g[1]]] <- mul.cf(cf$c2 , factor)
+                cf_3pt[[p_tot_tag]][[g[1]]] <- mul.cf(cf$c3 , factor)
 
+            } else {
+                cf_2pt[[p_tot_tag]][[g[1]]] <- add.cf(cf_2pt[[p_tot_tag]][[g[1]]], cf$c2, b=factor)
+                cf_3pt[[p_tot_tag]][[g[1]]] <- add.cf(cf_2pt[[p_tot_tag]][[g[1]]], cf$c3, b=factor)
+
+            }
         }
     }
 } else {
