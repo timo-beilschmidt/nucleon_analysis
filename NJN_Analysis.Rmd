@@ -238,17 +238,17 @@ $m^{eff}(t,\tau)=\frac{1}{\tau}ln\left(\frac{C(t)}{C(t+\tau)}\right)\rightarrow_
 
 colVec <- c("black", "red", "limegreen", "blue", "yellow", "cyan", "magenta", "maroon")
 
-m_eff <- function( mat, index, tau=1, tsize ){
-  i <- sample(c(1:num_conf), size=num_conf, replace=TRUE)
-  d <- apply ( mat[,i], c(1), mean )
+m_eff <- function( mat, indices, tau, tsize ){
+  #i <- sample(c(1:num_conf), size=num_conf, replace=TRUE)
+  d <- apply ( mat[,indices], c(1), mean )
   idt1 <- ( 0 : ( tsize - tau ) ) + 1
   idt2 <- idt1 + tau
 
   return ( log ( d[idt1] / d[idt2] ) / tau )
 }
 
-m_boot <- function ( corr, R, tau, tsize ) {
-  r <- boot(data=corr, R=R, statistic = m_eff, tsize=tsize )
+m_boot <- function ( corr, R, .tau, tsize ) {
+  r <- boot(data=corr, R=R, statistic = m_eff, tsize=tsize, tau=.tau )
   nt <- dim(r$t)[2]
 
   df <- data.frame (t= 0:(nt-1), rep(tau, times=nt),m= r$t0[1:nt],std= apply (r$t, c(2), sd ), r$t0[1:nt]-apply(r$t, c(2), mean )  )
@@ -261,14 +261,14 @@ m_boot <- function ( corr, R, tau, tsize ) {
 
 ```{r mass_plot, echo=FALSE}
 plotM <- function(c){
-	df <- m_boot(corr = c$cor_conf, R = 5000, tau = 1, tsize = c$T)
+	df <- m_boot(corr = c$cor_conf, R = 5000, .tau = 1, tsize = c$T)
 	plot(x=df$t[1:(c$T-1)]+1 , y=(df$m[1:(c$T-1)]), main = "N-N Correlator effective mass",ylab = "m_eff",xlab = "t", xlim=c(1,30),ylim = c(.15, 1.5) ,col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE)
 	arrows((df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]-df$std[1:(c$T-1)]),(df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]+df$std[1:(c$T-1)]), length=0.05,lwd=.3, angle=90, code=3)
         data <- list()
         data$tau1 <- df
 	for (ttau in c(2:8)) {
 	   
-	  df <- m_boot(corr = c$cor_conf, R = 5000, tau = ttau, tsize = c$T)
+	  df <- m_boot(corr = c$cor_conf, R = 5000, .tau = ttau, tsize = c$T)
 	  points(x=df$t[1:(c$T-1)]+1, y=(df$m[1:(c$T-1)]), pch=ttau,cex=0.8, col=colVec[ttau], lwd = 0.3)
 	  arrows((df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]-df$std[1:(c$T-1)]),(df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]+df$std[1:(c$T-1)]), length=0.05, angle=90, code=3, lwd = .3)
    data[[sprintf("tau%i", ttau)]] <- df
@@ -302,19 +302,19 @@ $\left. \frac{\partial m_\lambda^{eff}(t,\tau)}{\partial \lambda} \right|_{\lamb
 
 ```{r ratio_plot, echo=FALSE}
 
-ratio <- function( c2pt, index, c3pt, tau=1 ){
-  i <- sample(c(1:num_conf), size=num_conf, replace=TRUE)
-  c2 <- apply(c2pt$cf[i,], c(1), mean)
-  c3 <- apply ( c3pt$cf[i,], c(1), mean )
-  idt1 <- ( 0 : ( c2pt$T - tau ) ) + 1
-  idt2 <- idt1 + tau
+ratio <- function( c2pt, indices, c3pt, ttau=1, T ){
+  #i <- sample(c(1:num_conf), size=num_conf, replace=TRUE)
+  c2 <- apply(c2pt[indices,], c(1), mean)
+  c3 <- apply ( c3pt[indices,], c(1), mean )
+  idt1 <- ( 0 : ( T - ttau ) ) + 1
+  idt2 <- idt1 + ttau
 
-  return ( ( Re(c3[idt1]) / Re(c2[idt1]) - Re(c3[idt2])/Re(c2[idt2]) ) / tau )
+  return ( ( Re(c3[idt1]) / Re(c2[idt1]) - Re(c3[idt2])/Re(c2[idt2]) ) / ttau )
 }
 
 boot_Ratio <- function(c2, c3, R=5000, tau =1){
     
-    r <- boot(data = c2, R=R, statistic = ratio, c3pt=c3, tau=tau)
+    r <- boot(data = c2$cf, R=R, statistic = ratio, c3pt=c3$cf, ttau=tau, T=c2$T)
     nt <- dim(r$t)[2]
     df <- data.frame (t= 0:(nt-1), tau=rep(tau, times=nt),m= r$t0[1:nt],std= apply (r$t, c(2), sd ), r$t0[1:nt]-apply(r$t, c(2), mean )  )
     #write.table( df, file="m_boot.tmp", col.names=F, row.names=F )
