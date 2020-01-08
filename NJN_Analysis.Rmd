@@ -77,8 +77,9 @@ gf = "Gf_Cg5"
 max_conf <- 1756
 min_conf <- 4
 stepwidth <- 4
-test <- TRUE
+test <- FALSE
 plotAll <- TRUE
+doGEVP <- FALSE
 
 if(test){
     max_conf <-100
@@ -457,6 +458,15 @@ if(plotAll){
             }
         }
     }
+    if(doGEVP){
+
+        gevp_cf <- c(cf_2pt$p_tot0$Gi_Cg5, cf_2pt$p_tot0$Gi_Cg5gt)
+        gevp_cf <- c(gevp_cf, cf_2pt$p_tot0$Gi_Cgt)
+        gevp_cf <- c(gevp_cf, cf_2pt$p_tot0$Gi_C)
+
+        gevp(gevp_cf$cf, gevp_cf$T, gevp$nrObs)
+    }
+
 } else {
     #d[[sprintf("%s_%s_%s", gi, gf, mom_tag)]] <- plotAndCalc(gi, gf, mom_tag, test)
             cf <- plotAndCalc(gi, gf, mom_tag, test)
