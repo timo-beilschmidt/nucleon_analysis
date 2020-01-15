@@ -428,7 +428,15 @@ if(plotAll){
                         "px00py00pz01",
                         "px00py00pz00"
                                               )
-    gi <- list(c("Gi_Cg5","Gf_Cg5"),c( "Gi_Cg5gt","Gf_Cg5gt"),c( "Gi_Cgt","Gf_Cgt"),c( "Gi_C","Gf_C"))
+    gi <- list(
+                    c("Gi_Cg5","Gf_Cg5"),
+                    c( "Gi_Cg5gt","Gf_Cg5gt"),
+                    c( "Gi_Cgt","Gf_Cgt"),
+                    c( "Gi_C","Gf_C"),
+                    c( "Gi_Cg5","Gf_Cg5gt"),
+                    c( "Gi_Cg5gt","Gf_Cg5")
+                    
+                                            )
         cf_2pt <- list()
         cf_3pt <- list()
         for(p_tag in mom_tag){
@@ -452,21 +460,27 @@ if(plotAll){
            # d[[sprintf("%s_%s_%s", g[1], g[2], p_tag)]] <- plotAndCalc(g[1], g[2], p_tag, test)
             cf <- plotAndCalc(g[1], g[2], p_tag, test)
             if(!length(cf_2pt[[p_tot_tag]][[g[1]]])){
-                cf_2pt[[p_tot_tag]][[g[1]]] <- mul.cf(cf$c2 , factor)
-                cf_3pt[[p_tot_tag]][[g[1]]] <- mul.cf(cf$c3 , factor)
+                
+                cf_2pt[[p_tot_tag]][[g[1]]] <- list()
+                cf_3pt[[p_tot_tag]][[g[2]]] <- list()
+
+            }
+            if(!length(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]])){
+                cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] <- mul.cf(cf$c2 , factor)
+                cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <- mul.cf(cf$c3 , factor)
 
             } else {
-                cf_2pt[[p_tot_tag]][[g[1]]] <- add.cf(cf_2pt[[p_tot_tag]][[g[1]]], cf$c2, b=factor)
-                cf_3pt[[p_tot_tag]][[g[1]]] <- add.cf(cf_2pt[[p_tot_tag]][[g[1]]], cf$c3, b=factor)
+                cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] <- add.cf(cf_2pt[[p_tot_tag]][[g[1]]], cf$c2, b=factor)
+                cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <- add.cf(cf_2pt[[p_tot_tag]][[g[1]]], cf$c3, b=factor)
 
             }
         }
     }
     if(doGEVP){
-
-        gevp_cf <- c(cf_2pt$p_tot0$Gi_Cg5, cf_2pt$p_tot0$Gi_Cg5gt)
-        gevp_cf <- c(gevp_cf, cf_2pt$p_tot0$Gi_Cgt)
-        gevp_cf <- c(gevp_cf, cf_2pt$p_tot0$Gi_C)
+       mean_offdia <- add.cf(cf_2pt$p_tot0$Gi_Cg5$Gf_Cg5gt, cf_2pt$p_tot0$Gi_Cg5gt$Gf_Cg5, a=0.5, b=0.5)
+        gevp_cf <- c(cf_2pt$p_tot0$Gi_Cg5$Gf_Cg5gt, mean_offdia)
+        gevp_cf <- c(gevp_cf, mean_offdia)
+        gevp_cf <- c(gevp_cf, cf_2pt$p_tot0$Gi_Cg5gt$Gf_Cg5gt)
 
         gevp(gevp_cf$cf, gevp_cf$T, gevp$nrObs)
     }
