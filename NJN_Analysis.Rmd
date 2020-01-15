@@ -63,8 +63,8 @@ gf = "Gf_Cg5"
 max_conf <- 1756   
 min_conf <- 4
 stepwidth <- 4
-test <- TRUE
-plotAll <- FALSE
+test <- FALSE
+plotAll <- TRUE
 doGEVP <- FALSE
 par.tau <- 8
 time <- 64
@@ -309,8 +309,8 @@ $\left. \frac{\partial m_\lambda^{eff}(t,\tau)}{\partial \lambda} \right|_{\lamb
 
 ratio <- function( c2pt, indices, c3pt, ttau=1, T ){
   #i <- sample(c(1:num_conf), size=num_conf, replace=TRUE)
-  c2 <- apply(c2pt[indices,], c(1), mean)
-  c3 <- apply ( c3pt[indices,], c(1), mean )
+  c2 <- apply(c2pt[indices,], c(2), mean)
+  c3 <- apply ( c3pt[indices,], c(2), mean )
   idt1 <- ( 0 : ( T - ttau ) ) + 1
   idt2 <- idt1 + ttau
 
@@ -382,8 +382,8 @@ tau_plot <- function(data, n_points = 32, n_tau = 8){
 ```{r plots, echo=FALSE}
 plotAndCalc <- function(gi, gf, mom_tag, test){
     pdf(sprintf("NJN_%s_%s_%s_%i.pdf", gi, gf, mom_tag, test ))
-    c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag, path_letter = "a", conf_start = min_conf)
-    c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag, path_letter = "a", conf_start = min_conf)
+    c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag, path_letter = "b", conf_start = min_conf)
+    c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag, path_letter = "b", conf_start = min_conf)
 
     plot.cf(c2, main="2pt-function correlator", log="y", ylab="C", xlab="t")
     plot.cf(c3, main="3pt-function correlator", log="y", ylab="C", xlab="t") #legend_title="N-J-N")
