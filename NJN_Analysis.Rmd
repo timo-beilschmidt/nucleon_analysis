@@ -60,16 +60,18 @@ gi= "Gi_Cg5"
 gf = "Gf_Cg5"
 #gi= "Gi_Cg5gt"
 #gf = "Gf_Cg5gt"
+mom_tag <- "px00py00pz00"
 max_conf <- 1756   
 min_conf <- 4
 stepwidth <- 4
-test <- FALSE
-plotAll <- TRUE
+test <- TRUE
+plotAll <- FALSE
 doGEVP <- FALSE
+doTau <- FALSE
 par.tau <- 8
 time <- 64
-par.t1 <- 5
-par.t2 <- 15
+par.t1 <- 4
+par.t2 <- 12
 
 if(test){
     max_conf <-100
@@ -79,7 +81,6 @@ if(test){
 
 num_conf <- (max_conf-min_conf)/stepwidth+1
 
-mom_tag <- "px00py00pz00"
 
 read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, .gi= "Gi_Cg5", .gf = "Gf_Cg5", .mom_tag){
 
@@ -214,24 +215,6 @@ analyze <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_lette
 }
 ```
 
-```{r 2pt_calc, echo=FALSE}
-#c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag)
-```
-
-
-
-```{r 2pt_plot, echo=FALSE}
-plotCor <- function(c, title="N-N Correlator", legend_title="N-N"){
-    
-	df <- data.frame(t=c(1:(c$T)), C= c$cor, std= c$std)
-	plotwitherror(x=df$t, y=(df$C), dy=df$std, main = title ,ylab = "Corr",xlab = "t", xlim=c(1,c$T/2),col="blue",  pch=1, cex.main=1.5, frame.plot=FALSE, log = "y", length=0.05 , code =3)
-	#arrows((df$t), (df$C-df$std),(df$t), (df$C+df$std), length=0.05, angle=90, code=3)
-	legend("topright",c(legend_title),cex=.8,col=c("blue"),pch=c(1))
-        #print(df$C)
-}
-#plotCor(c2)
-```
-\pagebreak
 
 ### Effective Mass
 
@@ -239,64 +222,10 @@ We calculate the effective mass following  <https://arxiv.org/abs/1612.06963>.
 
 $m^{eff}(t,\tau)=\frac{1}{\tau}ln\left(\frac{C(t)}{C(t+\tau)}\right)\rightarrow_{t\rightarrow \infty} \frac{1}{\tau}ln(e^{E_0\tau})=E_0$
 
-```{r mass_meth, echo=FALSE}
 
-colVec <- c("black", "red", "limegreen", "blue", "yellow", "cyan", "magenta", "maroon")
-
-m_eff <- function( mat, indices, tau, tsize ){
-  #i <- sample(c(1:num_conf), size=num_conf, replace=TRUE)
-  d <- apply ( mat[,indices], c(1), mean )
-  idt1 <- ( 0 : ( tsize - tau ) ) + 1
-  idt2 <- idt1 + tau
-
-  return ( log ( d[idt1] / d[idt2] ) / tau )
-}
-
-m_boot <- function ( corr, R, .tau, tsize ) {
-  r <- boot(data=corr, R=R, statistic = m_eff, tsize=tsize, tau=.tau )
-  nt <- dim(r$t)[2]
-
-  df <- data.frame (t= 0:(nt-1), rep(tau, times=nt),m= r$t0[1:nt],std= apply (r$t, c(2), sd ), r$t0[1:nt]-apply(r$t, c(2), mean )  )
-  #write.table( df, file="m_boot.tmp", col.names=F, row.names=F )
-  return( invisible ( df ) )
-}
- #m_std <- apply(c$cor_conf,2,sd, na.rm = TRUE)
-
-```
-
-```{r mass_plot, echo=FALSE}
-plotM <- function(c){
-	df <- m_boot(corr = c$cor_conf, R = 5000, .tau = 1, tsize = c$T)
-	plot(x=df$t[1:(c$T-1)]+1 , y=(df$m[1:(c$T-1)]), main = "N-N Correlator effective mass",ylab = "m_eff",xlab = "t", xlim=c(1,30),ylim = c(.15, 1.5) ,col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE)
-	arrows((df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]-df$std[1:(c$T-1)]),(df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]+df$std[1:(c$T-1)]), length=0.05,lwd=.3, angle=90, code=3)
-        data <- list()
-        data$tau1 <- df
-	for (ttau in c(2:par.tau)) {
-	   
-	  df <- m_boot(corr = c$cor_conf, R = 5000, .tau = ttau, tsize = c$T)
-	  points(x=df$t[1:(c$T-1)]+1, y=(df$m[1:(c$T-1)]), pch=ttau,cex=0.8, col=colVec[ttau], lwd = 0.3)
-	  arrows((df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]-df$std[1:(c$T-1)]),(df$t[1:(c$T-1)]+1), Re(df$m[1:(c$T-1)]+df$std[1:(c$T-1)]), length=0.05, angle=90, code=3, lwd = .3)
-   data[[sprintf("tau%i", ttau)]] <- df
-	}
-	legend("topleft",c("tau = 1","tau = 2","tau = 3","tau = 4","tau = 5","tau = 6","tau = 7","tau = 8"),cex=.8,col=colVec,pch=c(1:8))
-   return(invisible(data))
-}
-#plotM(c2)
-```
-
-\pagebreak
 
 ## NJN-Correlator
 
-
-First the 3pt-function correlator:
-
-
-```{r 3pt, echo = FALSE}
-#c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag)
-#plotCor(c3, title="3pt-function Correlator", legend_title="N-J-N")
-```
-\pagebreak
 
 ###Ratio-Plot
 
@@ -306,9 +235,19 @@ $\left. \frac{\partial m_\lambda^{eff}(t,\tau)}{\partial \lambda} \right|_{\lamb
 
 
 ```{r ratio_plot, echo=FALSE}
-
+fit.constant <- function(M, y) {
+        res <- list()
+    if(is.matrix(M)){ # this is the covariance case
+                m.eff <- sum(M %*% y)/sum(M)
+            res$value <- (y-m.eff) %*% M %*% (y-m.eff)
+                }else{ # this is the uncorrelated case
+                            m.eff <- sum(M*y)/sum(M)
+                    res$value <- sum(M*(y-m.eff)^2)
+                        }
+        res$par <- c(m.eff)
+            return(res)
+}
 ratio <- function( c2pt, indices, c3pt, ttau=1, T ){
-  #i <- sample(c(1:num_conf), size=num_conf, replace=TRUE)
   c2 <- apply(c2pt[indices,], c(2), mean)
   c3 <- apply ( c3pt[indices,], c(2), mean )
   idt1 <- ( 0 : ( T - ttau ) ) + 1
@@ -317,48 +256,57 @@ ratio <- function( c2pt, indices, c3pt, ttau=1, T ){
   return ( ( Re(c3[idt1]) / Re(c2[idt1]) - Re(c3[idt2])/Re(c2[idt2]) ) / ttau )
 }
 
-boot_Ratio <- function(c2, c3, R=5000, tau =1){
+bootstrap.ratio <- function(c2, c3, R=5000, tau =1){
     
     r <- boot(data = c2$cf, R=R, statistic = ratio, c3pt=c3$cf, ttau=tau, T=c2$T)
-    nt <- dim(r$t)[2]
-    df <- data.frame (t= 0:(nt-1), tau=rep(tau, times=nt),m= r$t0[1:nt],std= apply (r$t, c(2), sd ), r$t0[1:nt]-apply(r$t, c(2), mean )  )
     #write.table( df, file="m_boot.tmp", col.names=F, row.names=F )
-    return( invisible ( df ) )
+    return( invisible ( r ) )
 }
-ratioPlot <- function(c2, c3){
-    if(gi== "Gi_Cg5"){
-        ylim <- c(-40, 30)
-    }else{
-        ylim <- c(-30, 30)
-    }
-    df <- boot_Ratio(c2, c3, R=5000)
-    plot(x=df$t[1:(c2$T-1)]+1 , y=Re(df$m[1:(c2$T-1)]), main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = ylim 
-         ,col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE)
-    arrows((df$t[1:(c2$T-1)]+1), Re(df$m[1:(c2$T-1)]-df$std[1:(c2$T-1)]),(df$t[1:(c2$T-1)]+1), Re(df$m[1:(c2$T-1)]+df$std[1:(c2$T-1)]), length=0.05,lwd=.3, angle=90, code=3)
-   # print(sprintf("tau = %i", 1))
+plot.ratio <- function(c2, c3 ,t1, t2){
+
+    df <- bootstrap.ratio(c2, c3, R=5000)
+    std = apply(df$t, c(2), sd ) 
+   plotwitherror(x=c(1:(c2$T)) , y=Re(df$t0[1:(c2$T)]), dy=Re(std[1:(c2$T)]) , main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-30,30), col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE) 
+  ratio <- cf_meta(.cf=cf_orig(cf=df$t), T=c2$T, symmetrised=TRUE)
+  ratio <- bootstrap.cf(ratio)
+  ratio$se <- std
+    M <- diag(1/ratio$se[t1:t2]^2)
+  ratio$ratiofit <- fit.constant(M=M, y = ratio$cf[t1:t2])
+      #fit.plateau2cf(ratio, t1=par.t1 , t2=par.t2)
+   lines(x=c(t1,t2),
+                   y=c(ratio$ratiofit$par[1],ratio$ratiofit$par[1]),
+                             col="black",
+                             lwd=1.3)
+        pcol <- col2rgb("black",alpha=TRUE)/255                                                                                                   
+        pcol[4] <- 0.65
+              pcol <- rgb(red=pcol[1],green=pcol[2],blue=pcol[3],alpha=pcol[4])
+              rect(xleft=ratio$ratiofit$t1, ybottom=ratio$ratiofit$t0[1]-ratio$ratiofit$se[1],
+                              xright=ratio$ratiofit$t2, ytop=ratio$ratiofit$t0[1]+ratio$ratiofit$se[1],
+                                         col=pcol,
+                                         border=NA)
+  return(ratio)
+
+if(doTau){
    data <- list()
    data$tau1 <- df
     for (ttau in c(2:par.tau)) { # 2:tau need change
                    
-        df <- boot_Ratio(c2,c3, R = 5000, tau = ttau)
+        df <- bootstrap.ratio(c2,c3, R = 5000, tau = ttau)
         points(x=df$t[1:(c2$T-1)]+1, y=Re(df$m[1:(c2$T-1)]), pch=ttau,cex=0.8, col=colVec[ttau], lwd = 0.3)
         arrows((df$t[1:(c2$T-1)]+1), Re(df$m[1:(c2$T-1)]-df$std[1:(c2$T-1)]),(df$t[1:(c2$T-1)]+1), Re(df$m[1:(c2$T-1)]+df$std[1:(c2$T-1)]), length=0.05, angle=90, code=3, lwd = .3)
-   # print(sprintf("tau = %i", ttau))
    data[[sprintf("tau%i", ttau)]] <- df
     }
 	legend("topleft",c("tau = 1","tau = 2","tau = 3","tau = 4","tau = 5","tau = 6","tau = 7","tau = 8"),cex=.8,col=colVec,pch=c(1:8))
     return(invisible(data))
 }
+}
 
-#plotData <- io(c2, c3)
-
-#Re(plotData$m)
 pointswitherror <- function(x, y, dy, col="black", ...) {
       points(x=x, y=y, col=col, ...)
       arrows(x0=x, y0=y-dy, x1=x, y1=y+dy, length=0.05,
                   angle=90, code=3, col=col, lw = 0.3)
 }
-tau_plot <- function(data, n_points = 32, n_tau = 8){
+plot.tau <- function(data, n_points = 32, n_tau = 8){
     tau_array <- array(0, dim=c(n_points,n_tau, 2))
     for(tau in c(1:n_tau)){ #change 2 back to 1
          temp <- as.matrix(data[[sprintf("tau%i", tau)]]["m"])
@@ -377,7 +325,6 @@ tau_plot <- function(data, n_points = 32, n_tau = 8){
         pointswitherror( x=c(1:n_tau),y= tau_array[time,,1], dy = tau_array[time,,2])
     }
 }
-#tau_plot(plotData)
 ```
 ```{r plots, echo=FALSE}
 plotAndCalc <- function(gi, gf, mom_tag, test){
@@ -391,13 +338,11 @@ plotAndCalc <- function(gi, gf, mom_tag, test){
     meff <- fit.effectivemass(meff, t1=par.t1, t2 = par.t2)
     plot.effectivemass(meff, main="Effective mass plot", ylab="meff", xlab="t")
     print(summary.effectivemassfit(meff))
-    plotData <- ratioPlot(c2,c3)
-    tau_plot(plotData, n_tau=par.tau)
+    plotData <- plot.ratio(c2,c3, t1=par.t1, t2=par.t2)
+    #plot.tau(plotData, n_tau=par.tau)
     dev.off()
-    #return(invisible(list("m_data"=m_data, "ratioData" = plotData)))
-    return(invisible(list("c2"=c2, "c3"=c3)))
+    return(invisible(list("c2"=c2, "c3"=c3, "ratio"=plotData)))
 }
-    #d <- list()
 if(plotAll){
 
     mom_tag <- list(    "px01py01pz-01",
@@ -431,8 +376,8 @@ if(plotAll){
     gi <- list(
                     c("Gi_Cg5","Gf_Cg5"),
                     c( "Gi_Cg5gt","Gf_Cg5gt"),
-                    c( "Gi_Cgt","Gf_Cgt"),
-                    c( "Gi_C","Gf_C"),
+                    #c( "Gi_Cgt","Gf_Cgt"),
+                    #c( "Gi_C","Gf_C"),
                     c( "Gi_Cg5","Gf_Cg5gt"),
                     c( "Gi_Cg5gt","Gf_Cg5")
                     
@@ -462,7 +407,7 @@ if(plotAll){
             if(!length(cf_2pt[[p_tot_tag]][[g[1]]])){
                 
                 cf_2pt[[p_tot_tag]][[g[1]]] <- list()
-                cf_3pt[[p_tot_tag]][[g[2]]] <- list()
+                cf_3pt[[p_tot_tag]][[g[1]]] <- list()
 
             }
             if(!length(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]])){
@@ -470,8 +415,8 @@ if(plotAll){
                 cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <- mul.cf(cf$c3 , factor)
 
             } else {
-                cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] <- add.cf(cf_2pt[[p_tot_tag]][[g[1]]], cf$c2, b=factor)
-                cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <- add.cf(cf_2pt[[p_tot_tag]][[g[1]]], cf$c3, b=factor)
+                cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] <- add.cf(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]], cf$c2, b=factor)
+                cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <- add.cf(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]], cf$c3, b=factor)
 
             }
         }
@@ -482,7 +427,7 @@ if(plotAll){
         gevp_cf <- c(gevp_cf, mean_offdia)
         gevp_cf <- c(gevp_cf, cf_2pt$p_tot0$Gi_Cg5gt$Gf_Cg5gt)
 
-        gevp(gevp_cf$cf, gevp_cf$T, gevp$nrObs)
+        gevp(gevp_cf$cf, gevp_cf$T, gevp_cf$nrObs)
     }
 
 } else {
