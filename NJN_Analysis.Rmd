@@ -64,8 +64,8 @@ mom_tag <- "px00py00pz00"
 max_conf <- 1756   
 min_conf <- 4
 stepwidth <- 4
-test <- TRUE
-plotAll <- FALSE
+test <- FALSE
+calcAll <- TRUE
 doGEVP <- FALSE
 doTau <- FALSE
 par.tau <- 8
@@ -326,45 +326,43 @@ plot.tau <- function(data, n_points = 32, n_tau = 8){
     }
 }
 ```
-```{r plots, echo=FALSE}
-plotAndCalc <- function(gi, gf, mom_tag, test){
-    pdf(sprintf("NJN_%s_%s_%s_%i.pdf", gi, gf, mom_tag, test ))
+
+
+
+
+
+```{r calculation, echo=FALSE}
+calc.cf <- function(gi, gf, mom_tag, test){
     c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag, path_letter = "b", conf_start = min_conf)
     c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag, path_letter = "b", conf_start = min_conf)
 
-    plot.cf(c2, main="2pt-function correlator", log="y", ylab="C", xlab="t")
-    plot.cf(c3, main="3pt-function correlator", log="y", ylab="C", xlab="t") #legend_title="N-J-N")
-    meff <- bootstrap.effectivemass(c2, type="log")
-    meff <- fit.effectivemass(meff, t1=par.t1, t2 = par.t2)
-    plot.effectivemass(meff, main="Effective mass plot", ylab="meff", xlab="t")
-    print(summary.effectivemassfit(meff))
-    plotData <- plot.ratio(c2,c3, t1=par.t1, t2=par.t2)
-    #plot.tau(plotData, n_tau=par.tau)
-    dev.off()
-    return(invisible(list("c2"=c2, "c3"=c3, "ratio"=plotData)))
+    return(invisible(list("c2"=c2, "c3"=c3)))
 }
-if(plotAll){
 
-    mom_tag <- list(    "px01py01pz-01",
-                        "px01py01pz01",
-                        "px01py-01pz-01",
-                        "px01py-01pz01",
-                        "px-01py01pz-01",
-                        "px-01py01pz01",
-                        "px-01py-01pz-01",
-                        "px-01py-01pz01",
-                        "px01py01pz00",
-                        "px01py-01pz00",
-                        "px-01py01pz00",
-                        "px-01py-01pz00",
-                        "px01py00pz-01",
-                        "px01py00pz01",
-                        "px-01py00pz-01",
-                        "px-01py00pz01",
-                        "px00py01pz-01",
-                        "px00py01pz01",
-                        "px00py-01pz-01",
-                        "px00py-01pz01",
+
+
+if(calcAll){
+
+    mom_tag <- list(   # "px01py01pz-01",
+                       # "px01py01pz01",
+                       # "px01py-01pz-01",
+                       # "px01py-01pz01",
+                       # "px-01py01pz-01",
+                       # "px-01py01pz01",
+                       # "px-01py-01pz-01",
+                       # "px-01py-01pz01",
+                       # "px01py01pz00",
+                       # "px01py-01pz00",
+                       # "px-01py01pz00",
+                       # "px-01py-01pz00",
+                       # "px01py00pz-01",
+                       # "px01py00pz01",
+                       # "px-01py00pz-01",
+                       # "px-01py00pz01",
+                       # "px00py01pz-01",
+                       # "px00py01pz01",
+                       # "px00py-01pz-01",
+                       # "px00py-01pz01",
                         "px01py00pz00",
                         "px-01py00pz00",
                         "px00py01pz00",
@@ -396,21 +394,21 @@ if(plotAll){
             }
 
             p_tot_tag <- sprintf("p_tot%i", num_i)
-            if(!length(cf_2pt[[p_tot_tag]])){
+            if(is.null(cf_2pt[[p_tot_tag]])){
                 cf_2pt[[p_tot_tag]] <- list()
                 cf_3pt[[p_tot_tag]] <- list()
 
             }
             for( g in gi){
-           # d[[sprintf("%s_%s_%s", g[1], g[2], p_tag)]] <- plotAndCalc(g[1], g[2], p_tag, test)
-            cf <- plotAndCalc(g[1], g[2], p_tag, test)
-            if(!length(cf_2pt[[p_tot_tag]][[g[1]]])){
+           # d[[sprintf("%s_%s_%s", g[1], g[2], p_tag)]] <- calc.cf(g[1], g[2], p_tag, test)
+            cf <- calc.cf(g[1], g[2], p_tag, test)
+            if(is.null(cf_2pt[[p_tot_tag]][[g[1]]])){
                 
                 cf_2pt[[p_tot_tag]][[g[1]]] <- list()
                 cf_3pt[[p_tot_tag]][[g[1]]] <- list()
 
             }
-            if(!length(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]])){
+            if(is.null(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]])){
                 cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] <- mul.cf(cf$c2 , factor)
                 cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <- mul.cf(cf$c3 , factor)
 
@@ -431,9 +429,41 @@ if(plotAll){
     }
 
 } else {
-    #d[[sprintf("%s_%s_%s", gi, gf, mom_tag)]] <- plotAndCalc(gi, gf, mom_tag, test)
-            cf <- plotAndCalc(gi, gf, mom_tag, test)
-
+    #d[[sprintf("%s_%s_%s", gi, gf, mom_tag)]] <- calc.cf(gi, gf, mom_tag, test)
+            cf <- calc.cf(gi, gf, mom_tag, test)
+            
 }
 ```
 
+
+```{r plotfunc, echo=FALSE}
+
+
+plot.comb <- function(g.i, g.f, mom.tag, bool){
+   
+    if(calcAll){
+        num_i <- str_count(mom.tag, "1")
+        p_tot_tag <- sprintf("p_tot%i", num_i)
+        c2 <- bootstrap.cf(cf_2pt[[p_tot_tag]][[g.i]][[g.f]])
+        c3 <- bootstrap.cf(cf_3pt[[p_tot_tag]][[g.i]][[g.f]])
+    } else {
+        c2 <- bootstrap.cf(cf$c2)
+        c3 <- bootstrap.cf(cf$c3)
+    }
+
+    pdf(sprintf("NJN_%s_%s_%s_%i.pdf", g.i, g.f, mom.tag, bool))
+    options(warn = -1)
+    print(sprintf("NJN_%s_%s_%s_%i.pdf", g.i, g.f, mom.tag, bool ))
+    plot.cf(c2, main="2pt-function correlator", log="y", ylab="C", xlab="t")
+    plot.cf(c3, main="3pt-function correlator", log="y", ylab="C", xlab="t") #legend_title="N-J-N")
+    meff <- bootstrap.effectivemass(c2, type="log")
+    meff <- fit.effectivemass(meff, t1=par.t1, t2 = par.t2)
+    plot.effectivemass(meff, main="Effective mass plot", ylab="meff", xlab="t")
+    print(summary.effectivemassfit(meff))
+    plotData <- plot.ratio(c2,c3, t1=par.t1, t2=par.t2)
+    #plot.tau(plotData, n_tau=par.tau)
+    dev.off()
+}
+
+plot.comb("Gi_Cg5","Gf_Cg5","px00py00pz00", test)
+```
