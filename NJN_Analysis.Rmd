@@ -64,7 +64,7 @@ mom_tag <- "px00py00pz00"
 max_conf <- 1756   
 min_conf <- 4
 stepwidth <- 4
-test <- FALSE
+test <- TRUE
 calcAll <- TRUE
 doGEVP <- FALSE
 doTau <- FALSE
@@ -96,6 +96,9 @@ read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, .gi= "Gi_Cg5", .gf
      }
     return(Reduce('+', diagrams))    
 }
+  pathToData<-function(path_letter){
+      return(sprintf("/hiskp4/petschlies/nucleon-ff/cA211%s.30.32/J125-k0p2/", path_letter))
+  }
 ###############################################################
 #main function for analyzing correlator function 
 ###############################################################
@@ -103,7 +106,6 @@ read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, .gi= "Gi_Cg5", .gf
 analyze <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_letter = "b", gi= "Gi_Cg5", gf = "Gf_Cg5", step = 24, mom_tag = "px00py00pz00", conf_start=0){
 
   
-  pathToData<-sprintf("/hiskp4/petschlies/nucleon-ff/cA211%s.30.32/J125-k0p2/", path_letter)
   cor <- array(0, dim = c(T, n_src, ((n_conf-conf_start)/step+1)))
   cor_m <- array(0, dim = c(T, n_src, ((n_conf-conf_start)/step+1)))
   cor_mean_src <- array(0, dim = c(T, ((n_conf-conf_start)/step+1)))
@@ -123,7 +125,7 @@ analyze <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_lette
 } else {
     end_str = ".tab"
 }
-  source_list <- get_source_coords_table(f = paste(pathToData,"source_coords.cA211",path_letter,".30.32.nsrc16",end_str, sep = ""))
+  source_list <- get_source_coords_table(f = paste(pathToData(path_letter),"source_coords.cA211",path_letter,".30.32.nsrc16",end_str, sep = ""))
   
  print(sprintf("%s, T=%i, n_src=%i, n_conf=%i, Gi = %s, Gf = %s, mom = %s", corrKey, T, n_src, ((n_conf-conf_start)/step+1),gi, gf, mom_tag))
   for (conf in seq(conf_start, n_conf, step)){
@@ -132,7 +134,7 @@ analyze <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_lette
       src_str <- get_source_coords_tag(c = conf, i=src, sl = source_list)
      
       # Open File
-      file_str <- paste(pathToData,"njn_fht.",formatC(conf, width = 4, flag = "0"),".", src_str,".aff", sep="")
+      file_str <- paste(pathToData(path_letter),"njn_fht.",formatC(conf, width = 4, flag = "0"),".", src_str,".aff", sep="")
       src_str_alt <- toupper(src_str)
       
       for (i in c(2:4)) {
@@ -332,13 +334,66 @@ plot.tau <- function(data, n_points = 32, n_tau = 8){
 
 
 ```{r calculation, echo=FALSE}
-calc.cf <- function(gi, gf, mom_tag, test){
-    c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag, path_letter = "b", conf_start = min_conf)
-    c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag, path_letter = "b", conf_start = min_conf)
+
+ratioData <- list() 
+
+calc.cf <- function(gi, gf, mom_tag, test, letter){
+    c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag, path_letter = letter, conf_start = min_conf)
+    c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag, path_letter = letter, conf_start = min_conf)
 
     return(invisible(list("c2"=c2, "c3"=c3)))
 }
 
+calc.all <- function(test, letter){
+        for(p_tag in mom_tag){
+            num_i <- str_count(p_tag, "1")
+            factor <-1
+            if (num_i==1){
+                factor <- 1./6
+            }else if (num_i==2){
+                factor<- 1./12.
+            } else if (num_i==3){
+                factor <- 1./8
+            }
+
+            p_tot_tag <- sprintf("p_tot%i", num_i)
+            if(is.null(cf_2pt[[p_tot_tag]])){
+                cf_2pt[[p_tot_tag]] <<- list()
+                cf_3pt[[p_tot_tag]] <<- list()
+                ratioData[[p_tot_tag]] <<- list()
+
+
+            }
+            for( g in gi){
+           # d[[sprintf("%s_%s_%s", g[1], g[2], p_tag)]] <- calc.cf(g[1], g[2], p_tag, test)
+            cf <- calc.cf(g[1], g[2], p_tag, test, letter)
+            if(is.null(cf_2pt[[p_tot_tag]][[g[1]]])){
+                
+                cf_2pt[[p_tot_tag]][[g[1]]] <<- list()
+                cf_3pt[[p_tot_tag]][[g[1]]] <<- list()
+                ratioData[[p_tot_tag]][[g[1]]] <<- list()
+
+            }
+            if(is.null(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]])){
+                cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- mul.cf(cf$c2 , factor)
+                cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- mul.cf(cf$c3 , factor)
+
+            } else {
+                cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- add.cf(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]], cf$c2, b=factor)
+                cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- add.cf(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]], cf$c3, b=factor)
+
+            }
+        }
+    }
+    if(doGEVP){
+       mean_offdia <- add.cf(cf_2pt$p_tot0$Gi_Cg5$Gf_Cg5gt, cf_2pt$p_tot0$Gi_Cg5gt$Gf_Cg5, a=0.5, b=0.5)
+        gevp_cf <<- c(cf_2pt$p_tot0$Gi_Cg5$Gf_Cg5gt, mean_offdia)
+        gevp_cf <<- c(gevp_cf, mean_offdia)
+        gevp_cf <<- c(gevp_cf, cf_2pt$p_tot0$Gi_Cg5gt$Gf_Cg5gt)
+
+        gevp(gevp_cf$cf, gevp_cf$T, gevp_cf$nrObs)
+    }
+}
 
 
 if(calcAll){
@@ -382,57 +437,31 @@ if(calcAll){
                                             )
         cf_2pt <- list()
         cf_3pt <- list()
-        for(p_tag in mom_tag){
-            num_i <- str_count(p_tag, "1")
-            factor <-1
-            if (num_i==1){
-                factor <- 1./6
-            }else if (num_i==2){
-                factor<- 1./12.
-            } else if (num_i==3){
-                factor <- 1./8
-            }
-
-            p_tot_tag <- sprintf("p_tot%i", num_i)
-            if(is.null(cf_2pt[[p_tot_tag]])){
-                cf_2pt[[p_tot_tag]] <- list()
-                cf_3pt[[p_tot_tag]] <- list()
-
-            }
-            for( g in gi){
-           # d[[sprintf("%s_%s_%s", g[1], g[2], p_tag)]] <- calc.cf(g[1], g[2], p_tag, test)
-            cf <- calc.cf(g[1], g[2], p_tag, test)
-            if(is.null(cf_2pt[[p_tot_tag]][[g[1]]])){
-                
-                cf_2pt[[p_tot_tag]][[g[1]]] <- list()
-                cf_3pt[[p_tot_tag]][[g[1]]] <- list()
-
-            }
-            if(is.null(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]])){
-                cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] <- mul.cf(cf$c2 , factor)
-                cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <- mul.cf(cf$c3 , factor)
-
-            } else {
-                cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] <- add.cf(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]], cf$c2, b=factor)
-                cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <- add.cf(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]], cf$c3, b=factor)
-
-            }
-        }
-    }
-    if(doGEVP){
-       mean_offdia <- add.cf(cf_2pt$p_tot0$Gi_Cg5$Gf_Cg5gt, cf_2pt$p_tot0$Gi_Cg5gt$Gf_Cg5, a=0.5, b=0.5)
-        gevp_cf <- c(cf_2pt$p_tot0$Gi_Cg5$Gf_Cg5gt, mean_offdia)
-        gevp_cf <- c(gevp_cf, mean_offdia)
-        gevp_cf <- c(gevp_cf, cf_2pt$p_tot0$Gi_Cg5gt$Gf_Cg5gt)
-
-        gevp(gevp_cf$cf, gevp_cf$T, gevp_cf$nrObs)
-    }
+        
+        calc.all(test, "a")
+        #calc.all(test, "b")
 
 } else {
     #d[[sprintf("%s_%s_%s", gi, gf, mom_tag)]] <- calc.cf(gi, gf, mom_tag, test)
             cf <- calc.cf(gi, gf, mom_tag, test)
             
 }
+
+calc.divideby <- function(factor=1/2){
+
+
+        for(p_tag in mom_tag){
+            num_i <- str_count(p_tag, "1")
+
+            p_tot_tag <- sprintf("p_tot%i", num_i)
+            for( g in gi){
+                cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- mul.cf(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] , factor)
+                cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- mul.cf(cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] , factor)
+            }
+        }
+
+}
+#calc.divideby(1/2)
 ```
 
 
@@ -460,7 +489,12 @@ plot.comb <- function(g.i, g.f, mom.tag, bool){
     meff <- fit.effectivemass(meff, t1=par.t1, t2 = par.t2)
     plot.effectivemass(meff, main="Effective mass plot", ylab="meff", xlab="t")
     print(summary.effectivemassfit(meff))
-    plotData <- plot.ratio(c2,c3, t1=par.t1, t2=par.t2)
+    if(calcAll){
+
+        ratioData[[p_tot_tag]][[g.i]][[g.f]] <<- plot.ratio(c2,c3, t1=par.t1, t2=par.t2)
+    } else {
+        ratioData <<- plot.ratio(c2,c3, t1=par.t1, t2=par.t2)
+    }
     #plot.tau(plotData, n_tau=par.tau)
     dev.off()
 }
