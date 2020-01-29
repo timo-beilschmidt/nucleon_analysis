@@ -51,7 +51,7 @@ projector <- function(sgn, gamma0){
 
 ## NN-Correlator
 
-```{r analyze, echo=FALSE, results='asis'}
+```{r analyse, echo=FALSE, results='asis'}
 ##############################################################
 #Setting up variables to look at
 ##############################################################
@@ -64,7 +64,7 @@ mom_tag <- "px00py00pz00"
 max_conf <- 1756   
 min_conf <- 4
 stepwidth <- 4
-test <- FALSE
+test <- TRUE
 calcAll <- TRUE
 doGEVP <- FALSE
 doTau <- FALSE
@@ -114,7 +114,7 @@ getSrcList <- function(letter){
 #main function for analyzing correlator function 
 ###############################################################
 
-analyze <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_letter = "b", gi= "Gi_Cg5", gf = "Gf_Cg5", step = 24, mom_tag = "px00py00pz00", conf_start=0){
+analyse <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_letter = "b", gi= "Gi_Cg5", gf = "Gf_Cg5", step = 24, mom_tag = "px00py00pz00", conf_start=0){
 
     
     cf <- array(0, dim = c(T, (nchar(path_letter)*num_conf)))
@@ -300,7 +300,7 @@ plot.ratio <- function(c2, c3 ,t1, t2, add=FALSE, .col="black"){
   ratio <- cf_meta(.cf=cf_orig(cf=df$t), T=c2$T, symmetrised=TRUE)
   ratio <- bootstrap.cf(ratio)
   ratio$se <- std
-  M <- try(invertCovMatrix(cf$t[,ii], boot.samples=TRUE), silent=TRUE)
+  M <- try(invertCovMatrix(cf$t[,par.t1:t2], boot.samples=TRUE), silent=TRUE)
   if(inherits(M, "try-error")) {
     warning("[fit.effectivemass] inversion of variance covariance matrix failed, continuing with uncorrelated chi^2\n")
     M <- diag(1/ratio$se[t1:t2]^2)
@@ -374,8 +374,8 @@ plot.tau <- function(data, n_points = 32, n_tau = 8){
 ratioData <- list() 
 
 calc.cf <- function(gi, gf, mom_tag, test, letter){
-    c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag, path_letter = letter, conf_start = min_conf)
-    c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag, path_letter = letter, conf_start = min_conf)
+    c2<- analyse(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag, path_letter = letter, conf_start = min_conf)
+    c3 <- analyse(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag, path_letter = letter, conf_start = min_conf)
 
     return(invisible(list("c2"=c2, "c3"=c3)))
 }
@@ -454,12 +454,12 @@ if(calcAll){
                        # "px00py01pz01",
                        # "px00py-01pz-01",
                        # "px00py-01pz01",
-                        "px01py00pz00",
-                        "px-01py00pz00",
-                        "px00py01pz00",
-                        "px00py-01pz00",
-                        "px00py00pz-01",
-                        "px00py00pz01",
+                       # "px01py00pz00",
+                       # "px-01py00pz00",
+                       # "px00py01pz00",
+                       # "px00py-01pz00",
+                       # "px00py00pz-01",
+                       # "px00py00pz01",
                         "px00py00pz00"
                                               )
     gi <- list(
