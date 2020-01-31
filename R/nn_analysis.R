@@ -35,6 +35,38 @@ projector <- function(sgn, gamma0){
 
 }
 
+
+
+##############################################################
+#Setting up variables to look at
+##############################################################
+
+gi= "Gi_Cg5"
+gf = "Gf_Cg5"
+#gi= "Gi_Cg5gt"
+#gf = "Gf_Cg5gt"
+mom_tag <- "px00py00pz00"
+max_conf <- 1756   
+min_conf <- 4
+stepwidth <- 4
+test <- TRUE
+calcAll <- TRUE
+doGEVP <- FALSE
+doTau <- FALSE
+par.tau <- 8
+time <- 64
+par.t1 <- 5
+par.t2 <- 12
+
+if(test){
+    max_conf <-100
+    min_conf <- 4
+    stepwidth <- 24
+}
+
+num_conf <- (max_conf-min_conf)/stepwidth+1
+
+
 read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, .gi= "Gi_Cg5", .gf = "Gf_Cg5", .mom_tag){
 
     diagrams <- list()
@@ -49,10 +81,9 @@ read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, .gi= "Gi_Cg5", .gf
      }
     return(Reduce('+', diagrams))    
 }
-
-pathToData<-function(letter){
-	return(sprintf("/hiskp4/petschlies/nucleon-ff/cA211%s.30.32/J125-k0p2/", letter))
-}
+  pathToData<-function(letter){
+      return(sprintf("/hiskp4/petschlies/nucleon-ff/cA211%s.30.32/J125-k0p2/", letter))
+  }
 
 getSrcList <- function(letter){
 
@@ -64,12 +95,11 @@ getSrcList <- function(letter){
     }
   return( source_list <- get_source_coords_table(f = paste(pathToData(letter),"source_coords.cA211",letter,".30.32.nsrc16",end_str, sep = "")))
 }
-
 ###############################################################
 #main function for analyzing correlator function 
 ###############################################################
 
-#' analyze Function
+#' analyse Function
 #'
 #' This function allows you to read a specific correlator from an aff-file.
 #' @param 
@@ -77,9 +107,8 @@ getSrcList <- function(letter){
 #' @export
 #' @examples
 #' cf <- analyze()
- 
 
-analyze <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_letter = "b", gi= "Gi_Cg5", gf = "Gf_Cg5", step = 24, mom_tag = "px00py00pz00", conf_start=0){
+analyse <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_letter = "b", gi= "Gi_Cg5", gf = "Gf_Cg5", step = 24, mom_tag = "px00py00pz00", conf_start=0){
 
     
     cf <- array(0, dim = c(T, (nchar(path_letter)*num_conf)))
@@ -196,10 +225,6 @@ analyze <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_lette
   return(cf)
 }
 
-###################################################################################################
-#	Plot-Tools
-###################################################################################################
-
 fit.constant <- function(M, y) {
         res <- list()
     if(is.matrix(M)){ # this is the covariance case
@@ -214,9 +239,9 @@ fit.constant <- function(M, y) {
 }
 
 
-ratio <- function( c2pt, indices, c3pt, ttau=1, T ){
-  c2 <- apply(c2pt[indices,], c(2), mean)
+ratio <- function( c3pt, indices, c2pt, ttau=1, T ){
   c3 <- apply ( c3pt[indices,], c(2), mean )
+  c2 <- apply(c2pt[indices,], c(2), mean)
   idt1 <- ( 0 : ( T - ttau ) ) + 1
   idt2 <- idt1 + ttau
 
@@ -227,7 +252,7 @@ ratio <- function( c2pt, indices, c3pt, ttau=1, T ){
 
 bootstrap.ratio <- function(c2, c3, R=5000, tau =1){
     
-    r <- boot(data = c2$cf, R=R, statistic = ratio, c3pt=c3$cf, ttau=tau, T=c2$T)
+    r <- boot(data = c3$cf, R=R, statistic = ratio, c2pt=c2$cf, ttau=tau, T=c2$T)
     #write.table( df, file="m_boot.tmp", col.names=F, row.names=F )
     return( invisible ( r ) )
 }
@@ -242,20 +267,20 @@ bootstrap.ratio <- function(c2, c3, R=5000, tau =1){
 #' @examples
 #' 
 
-plot.ratio <- function(c2, c3 ,t1, t2, add=FALSE){
+plot.ratio <- function(c2, c3 ,t1, t2, add=FALSE, .col="black"){
 
     df <- bootstrap.ratio(c2, c3, R=5000)
     std = apply(df$t, c(2), sd ) 
     if(!add){
-   plotwitherror(x=c(1:(c2$T)) , y=Re(df$t0[1:(c2$T)]), dy=Re(std[1:(c2$T)]) , main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-30,30), col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE) 
+   plotwitherror(x=c(1:(c2$T)) , y=Re(df$t0[1:(c2$T)]), dy=Re(std[1:(c2$T)]) , main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-30,30), col=.col,  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE) 
     } else {
 
-   pointswitherror(x=c(1:(c2$T)) , y=Re(df$t0[1:(c2$T)]), dy=Re(std[1:(c2$T)]) , main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-30,30), col=colVec[1],  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE) 
+   pointswitherror(x=c(1:(c2$T)) , y=Re(df$t0[1:(c2$T)]), dy=Re(std[1:(c2$T)]) , main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-30,30), col=.col,  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE) 
     }
   ratio <- cf_meta(.cf=cf_orig(cf=df$t), T=c2$T, symmetrised=TRUE)
   ratio <- bootstrap.cf(ratio)
   ratio$se <- std
-  M <- try(invertCovMatrix(cf$t[,ii], boot.samples=TRUE), silent=TRUE)
+  M <- try(invertCovMatrix(cf$t[,t1:t2], boot.samples=TRUE), silent=TRUE)
   if(inherits(M, "try-error")) {
     warning("[fit.effectivemass] inversion of variance covariance matrix failed, continuing with uncorrelated chi^2\n")
     M <- diag(1/ratio$se[t1:t2]^2)
@@ -264,7 +289,7 @@ plot.ratio <- function(c2, c3 ,t1, t2, add=FALSE){
       #fit.plateau2cf(ratio, t1=par.t1 , t2=par.t2)
    lines(x=c(t1,t2),
                    y=c(ratio$ratiofit$par[1],ratio$ratiofit$par[1]),
-                             col="black",
+                             col=.col,
                              lwd=1.3)
         #pcol <- col2rgb("black",alpha=TRUE)/255                                                                                                   
         #pcol[4] <- 0.65
@@ -319,9 +344,17 @@ plot.tau <- function(data, n_points = 32, n_tau = 8){
     }
 }
 
+
+ratioData <- list() 
+
 calc.cf <- function(gi, gf, mom_tag, test, letter){
-    c2<- analyze(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag, path_letter = letter, conf_start = min_conf)
-    c3 <- analyze(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag, path_letter = letter, conf_start = min_conf)
+    c2<- analyse(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag, path_letter = letter, conf_start = min_conf)
+    if(strcmp(gi, "Gi_Cg5gt") || strcmp(gf, "Gf_Cg5gt")){
+        l <- "b"
+    } else {
+        l <- letter
+    }
+    c3 <- analyse(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag, path_letter = l, conf_start = min_conf)
 
     return(invisible(list("c2"=c2, "c3"=c3)))
 }
@@ -362,20 +395,83 @@ calc.all <- function(test, letter){
 
             } else {
                 cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- add.cf(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]], cf$c2, b=factor)
-                cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- add.cf(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]], cf$c3, b=factor)
+                cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- add.cf(cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]], cf$c3, b=factor)
 
             }
         }
     }
-    if(doGEVP){
+}
+
+#' gevp Function for specific 2pt cf
+#'
+#' Uses GEVP on 2pt cfs 
+#' @param 
+#' @keywords
+#' @export
+#' @examples
+
+gevp_2pt <- function(){
+
+
        mean_offdia <- add.cf(cf_2pt$p_tot0$Gi_Cg5$Gf_Cg5gt, cf_2pt$p_tot0$Gi_Cg5gt$Gf_Cg5, a=0.5, b=0.5)
         gevp_cf <<- c(cf_2pt$p_tot0$Gi_Cg5$Gf_Cg5gt, mean_offdia)
         gevp_cf <<- c(gevp_cf, mean_offdia)
         gevp_cf <<- c(gevp_cf, cf_2pt$p_tot0$Gi_Cg5gt$Gf_Cg5gt)
 
-        gevp(gevp_cf$cf, gevp_cf$T, gevp_cf$nrObs)
-    }
+        return(invisible(gevp(gevp_cf$cf, gevp_cf$Time, element.order=c(1:gevp_cf$nrObs))))
+
 }
+
+#if(calcAll){
+#
+#    mom_tag <- list(   # "px01py01pz-01",
+#                       # "px01py01pz01",
+#                       # "px01py-01pz-01",
+#                       # "px01py-01pz01",
+#                       # "px-01py01pz-01",
+#                       # "px-01py01pz01",
+#                       # "px-01py-01pz-01",
+#                       # "px-01py-01pz01",
+#                       # "px01py01pz00",
+#                       # "px01py-01pz00",
+#                       # "px-01py01pz00",
+#                       # "px-01py-01pz00",
+#                       # "px01py00pz-01",
+#                       # "px01py00pz01",
+#                       # "px-01py00pz-01",
+#                       # "px-01py00pz01",
+#                       # "px00py01pz-01",
+#                       # "px00py01pz01",
+#                       # "px00py-01pz-01",
+#                       # "px00py-01pz01",
+#                        "px01py00pz00",
+#                        "px-01py00pz00",
+#                        "px00py01pz00",
+#                        "px00py-01pz00",
+#                        "px00py00pz-01",
+#                        "px00py00pz01",
+#                        "px00py00pz00"
+#                                              )
+#    gi <- list(
+#                    c("Gi_Cg5","Gf_Cg5"),
+#                    c( "Gi_Cg5gt","Gf_Cg5gt"),
+#                    #c( "Gi_Cgt","Gf_Cgt"),
+#                    #c( "Gi_C","Gf_C"),
+#                    c( "Gi_Cg5","Gf_Cg5gt"),
+#                    c( "Gi_Cg5gt","Gf_Cg5")
+#                    
+#                                            )
+#        cf_2pt <- list()
+#        cf_3pt <- list()
+#        
+#        calc.all(test, "ab")
+#        #calc.all(test, "b")
+#
+#} else {
+#    #d[[sprintf("%s_%s_%s", gi, gf, mom_tag)]] <- calc.cf(gi, gf, mom_tag, test)
+#            cf <- calc.cf(gi, gf, mom_tag, test)
+#            
+#}
 
 calc.divideby <- function(factor=1/2){
 
@@ -391,14 +487,17 @@ calc.divideby <- function(factor=1/2){
         }
 
 }
-#' plot.comb Function
+#calc.divideby(1/2)
+
+
+#' plot Function for single combination
 #'
 #' This function allows you to plot one specific correlator (2pt and 3pt) combination.
 #' @param 
 #' @keywords
 #' @export
 #' @examples
-#' 
+
 plot.comb <- function(g.i, g.f, mom.tag, bool){
    
     if(calcAll){
@@ -429,15 +528,16 @@ plot.comb <- function(g.i, g.f, mom.tag, bool){
     #plot.tau(plotData, n_tau=par.tau)
     dev.off()
 }
-#' plot.2comb Function
+
+#' plot Function to compare 2 ratios
 #'
 #' This function allows you to compare two specific correlator ratios.
 #' @param 
 #' @keywords
 #' @export
 #' @examples
-#' 
-plot.2combs <- function(gi1 = "Gi_Cg5", gf1 = "Gf_Cg5", gi2 = "Gi_Cg5gt", gf2 = "Gf_Cg5gt", mom.tag = "px00py00pz00"){
+
+plot.2combs <- function(gi1 = "Gi_Cg5", gf1 = "Gf_Cg5", gi2 = "Gi_Cg5gt", gf2 = "Gf_Cg5gt", mom.tag = "px00py00pz00", col2 = "blue"){
 
         stopifnot(calcAll)
 
@@ -451,8 +551,10 @@ plot.2combs <- function(gi1 = "Gi_Cg5", gf1 = "Gf_Cg5", gi2 = "Gi_Cg5gt", gf2 = 
         c2 <- bootstrap.cf(cf_2pt[[p_tot_tag]][[gi2]][[gf2]])
         c3 <- bootstrap.cf(cf_3pt[[p_tot_tag]][[gi2]][[gf2]])
 
-        ratio2 <- plot.ratio(c2,c3, t1=par.t1, t2=par.t2, add=TRUE)
+        ratio2 <- plot.ratio(c2,c3, t1=par.t1, t2=par.t2, add=TRUE, .col=col2)
 
 
         return(invisible(list("ratio1"=ratio1, "ratio2"=ratio2)))
 }
+
+#ratios <- plot.comb("Gi_Cg5","Gf_Cg5","px00py00pz00", test)

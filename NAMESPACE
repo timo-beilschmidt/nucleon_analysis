@@ -3,4 +3,5 @@
 S3method(plot,"2combs")
 S3method(plot,comb)
 S3method(plot,ratio)
-export(analyze)
+export(analyse)
+export(gevp_2pt)
