@@ -258,7 +258,7 @@ bootstrap.ratio <- function(c2, c3, R=5000, tau =1){
 }
 
 
-#' plot.ratio Function
+#' plot_ratio Function
 #'
 #' This function allows you to plot the ratio of two correlator functions.
 #' @param 
@@ -267,7 +267,7 @@ bootstrap.ratio <- function(c2, c3, R=5000, tau =1){
 #' @examples
 #' 
 
-plot.ratio <- function(c2, c3 ,t1, t2, add=FALSE, .col="black"){
+plot_ratio <- function(c2, c3 ,t1, t2, add=FALSE, .col="black"){
 
     df <- bootstrap.ratio(c2, c3, R=5000)
     std = apply(df$t, c(2), sd ) 
@@ -283,7 +283,7 @@ plot.ratio <- function(c2, c3 ,t1, t2, add=FALSE, .col="black"){
   M <- try(invertCovMatrix(cf$t[,t1:t2], boot.samples=TRUE), silent=TRUE)
   if(inherits(M, "try-error")) {
     warning("[fit.effectivemass] inversion of variance covariance matrix failed, continuing with uncorrelated chi^2\n")
-    M <- diag(1/ratio$se[t1:t2]^2)
+    M <- diag(1/ratio$tsboot.se[t1:t2]^2)
   }
   ratio$ratiofit <- fit.constant(M=M, y = ratio$cf[t1:t2])
       #fit.plateau2cf(ratio, t1=par.t1 , t2=par.t2)
@@ -324,7 +324,7 @@ pointswitherror <- function(x, y, dy, col="black", ...) {
 }
 
 
-plot.tau <- function(data, n_points = 32, n_tau = 8){
+plot_tau <- function(data, n_points = 32, n_tau = 8){
     tau_array <- array(0, dim=c(n_points,n_tau, 2))
     for(tau in c(1:n_tau)){ #change 2 back to 1
          temp <- as.matrix(data[[sprintf("tau%i", tau)]]["m"])
@@ -418,7 +418,7 @@ gevp_2pt <- function(){
         gevp_cf <<- c(gevp_cf, mean_offdia)
         gevp_cf <<- c(gevp_cf, cf_2pt$p_tot0$Gi_Cg5gt$Gf_Cg5gt)
 
-        return(invisible(gevp(gevp_cf$cf, gevp_cf$Time, element.order=c(1:gevp_cf$nrObs))))
+        return(invisible(gevp(gevp_cf$cf, gevp_cf$Time, element.order=c(1:(gevp_cf$nrObs)))))
 
 }
 
@@ -487,8 +487,6 @@ calc.divideby <- function(factor=1/2){
         }
 
 }
-#calc.divideby(1/2)
-
 
 #' plot Function for single combination
 #'
@@ -498,7 +496,7 @@ calc.divideby <- function(factor=1/2){
 #' @export
 #' @examples
 
-plot.comb <- function(g.i, g.f, mom.tag, bool){
+plot_comb <- function(g.i, g.f, mom.tag, bool){
    
     if(calcAll){
         num_i <- str_count(mom.tag, "1")
@@ -510,22 +508,22 @@ plot.comb <- function(g.i, g.f, mom.tag, bool){
         c3 <- bootstrap.cf(cf$c3)
     }
 
-    pdf(sprintf("NJN_%s_%s_%s_%i.pdf", g.i, g.f, mom.tag, bool))
+    pdf(sprintf("output/NJN_%s_%s_%s_%i.pdf", g.i, g.f, mom.tag, bool))
     options(warn = -1)
     print(sprintf("NJN_%s_%s_%s_%i.pdf", g.i, g.f, mom.tag, bool ))
-    plot.cf(c2, main="2pt-function correlator", log="y", ylab="C", xlab="t")
-    plot.cf(c3, main="3pt-function correlator", log="y", ylab="C", xlab="t") #legend_title="N-J-N")
+    plot_cf(c2, main="2pt-function correlator", log="y", ylab="C", xlab="t")
+    plot_cf(c3, main="3pt-function correlator", log="y", ylab="C", xlab="t") #legend_title="N-J-N")
     meff <- bootstrap.effectivemass(c2, type="log")
     meff <- fit.effectivemass(meff, t1=par.t1, t2 = par.t2)
-    plot.effectivemass(meff, main="Effective mass plot", ylab="meff", xlab="t")
+    plot_effectivemass(meff, main="Effective mass plot", ylab="meff", xlab="t")
     print(summary.effectivemassfit(meff))
     if(calcAll){
 
-        ratioData[[p_tot_tag]][[g.i]][[g.f]] <<- plot.ratio(c2,c3, t1=par.t1, t2=par.t2)
+        ratioData[[p_tot_tag]][[g.i]][[g.f]] <<- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
     } else {
-        ratioData <<- plot.ratio(c2,c3, t1=par.t1, t2=par.t2)
+        ratioData <<- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
     }
-    #plot.tau(plotData, n_tau=par.tau)
+    #plot_tau(plotData, n_tau=par.tau)
     dev.off()
 }
 
@@ -537,7 +535,7 @@ plot.comb <- function(g.i, g.f, mom.tag, bool){
 #' @export
 #' @examples
 
-plot.2combs <- function(gi1 = "Gi_Cg5", gf1 = "Gf_Cg5", gi2 = "Gi_Cg5gt", gf2 = "Gf_Cg5gt", mom.tag = "px00py00pz00", col2 = "blue"){
+plot_2combs <- function(gi1 = "Gi_Cg5", gf1 = "Gf_Cg5", gi2 = "Gi_Cg5gt", gf2 = "Gf_Cg5gt", mom.tag = "px00py00pz00", col2 = "blue"){
 
         stopifnot(calcAll)
 
@@ -546,15 +544,15 @@ plot.2combs <- function(gi1 = "Gi_Cg5", gf1 = "Gf_Cg5", gi2 = "Gi_Cg5gt", gf2 = 
         c2 <- bootstrap.cf(cf_2pt[[p_tot_tag]][[gi1]][[gf1]])
         c3 <- bootstrap.cf(cf_3pt[[p_tot_tag]][[gi1]][[gf1]])
 
-        ratio1 <- plot.ratio(c2,c3, t1=par.t1, t2=par.t2)
+        ratio1 <- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
 
         c2 <- bootstrap.cf(cf_2pt[[p_tot_tag]][[gi2]][[gf2]])
         c3 <- bootstrap.cf(cf_3pt[[p_tot_tag]][[gi2]][[gf2]])
 
-        ratio2 <- plot.ratio(c2,c3, t1=par.t1, t2=par.t2, add=TRUE, .col=col2)
+        ratio2 <- plot_ratio(c2,c3, t1=par.t1, t2=par.t2, add=TRUE, .col=col2)
 
 
         return(invisible(list("ratio1"=ratio1, "ratio2"=ratio2)))
 }
 
-#ratios <- plot.comb("Gi_Cg5","Gf_Cg5","px00py00pz00", test)
+#ratios <- plot_comb("Gi_Cg5","Gf_Cg5","px00py00pz00", test)
