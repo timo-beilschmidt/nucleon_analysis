@@ -257,6 +257,44 @@ bootstrap.ratio <- function(c2, c3, R=5000, tau =1){
     return( invisible ( r ) )
 }
 
+#' summary_ratiofit Function 
+#'
+#' This function allows you to summarize the ratio fit.
+#' @param 
+#' @keywords
+#' @export
+#' @examples
+#' 
+summary_ratiofit <- function(object, ..., verbose = FALSE) {
+      ratio <- object
+    cat("\n ** Result of ratio analysis **\n\n")
+
+    #cat("no. measurements\t=\t", ratio$N, "\n")
+    #cat("type\t=\t", ratio$type, "\n")
+    cat("boot.R\t=\t", ratio$boot.R, "\n")
+    cat("boot.l\t=\t", ratio$boot.l, "\n")
+    cat("Time extend\t=\t", ratio$Time, "\n")
+    cat("NA count in fitted bootstrap samples:\t", length(which(is.na(ratio$cf[,ratio$ii]))),
+        "(",100*length(which(is.na(ratio$cf[,ratio$ii])))/ length(ratio$cf[,ratio$ii]), "%)\n")
+    #cat("NAs replaced in fit:", ratio$ratiofit$replace.na, "\n")
+    cat("time range from", ratio$ratiofit$t1, " to ", ratio$ratiofit$t2, "\n")
+    #cat("No correlation functions", ratio$nrObs, "\n")
+    #if(verbose) {
+    #    cat("values with errors:\n\n")
+    #    print(data.frame(t= ratio$t, m = ratio$t0, dm = ratio$se))
+    #    }
+    #cat("correlated fit\t=\t", ratio$ratiofit$useCov, "\n")
+    #cat("m\t=\t", ratio$ratiofit$t0[1], "\n")
+    #cat("dm\t=\t", ratio$ratiofit$se[1], "\n")
+    cat("R\t=\t", ratio$ratiofit$t0[1], "\n")
+    cat("dR\t=\t", ratio$ratiofit$se[1], "\n")
+    cat("chisqr\t=\t", ratio$ratiofit$chisqr, "\n")
+    cat("dof\t=\t", ratio$ratiofit$dof, "\n")
+    cat("chisqr/dof=\t",
+                        ratio$ratiofit$chisqr/ratio$ratiofit$dof, "\n")
+    cat("Quality of the fit (p-value):",   ratio$ratiofit$Qval, "\n")
+
+}
 
 #' plot_ratio Function
 #'
@@ -270,7 +308,8 @@ bootstrap.ratio <- function(c2, c3, R=5000, tau =1){
 plot_ratio <- function(c2, c3 ,t1, t2, add=FALSE, .col="black"){
 
     df <- bootstrap.ratio(c2, c3, R=5000)
-    std = apply(df$t, c(2), sd ) 
+    std = apply(df$t, c(2), sd )
+    std = std/sqrt(length(std))
     if(!add){
    plotwitherror(x=c(1:(c2$T)) , y=Re(df$t0[1:(c2$T)]), dy=Re(std[1:(c2$T)]) , main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-30,30), col=.col,  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE) 
     } else {
@@ -280,17 +319,37 @@ plot_ratio <- function(c2, c3 ,t1, t2, add=FALSE, .col="black"){
   ratio <- cf_meta(.cf=cf_orig(cf=df$t), T=c2$T, symmetrised=TRUE)
   ratio <- bootstrap.cf(ratio)
   ratio$se <- std
-  M <- try(invertCovMatrix(cf$t[,t1:t2], boot.samples=TRUE), silent=TRUE)
+  M <- try(invertCovMatrix(ratio$cf[,t1:t2], boot.samples=TRUE), silent=TRUE)
   if(inherits(M, "try-error")) {
-    warning("[fit.effectivemass] inversion of variance covariance matrix failed, continuing with uncorrelated chi^2\n")
+    warning("Inversion of variance covariance matrix failed, continuing with uncorrelated chi^2\n")
     M <- diag(1/ratio$tsboot.se[t1:t2]^2)
   }
-  ratio$ratiofit <- fit.constant(M=M, y = ratio$cf[t1:t2])
-      #fit.plateau2cf(ratio, t1=par.t1 , t2=par.t2)
+  ratio$ii <- c(t1:t2)
+  ratio$dof <- length(ratio$ii)-1
+  ratiofit.tsboot <- array(0, dim=c(ratio$boot.R,2))
+  for(i in c(1:ratio$boot.R)) {
+            opt <- fit.constant(M=M, y = ratio$cf[i,t1:t2])
+            ratiofit.tsboot[i, 1] <- opt$par[1]
+            ratiofit.tsboot[i, 2] <- opt$value
+            }
+     ratio$ratiofit.tsboot <- ratiofit.tsboot
+  ratio$ratiofit <- fit.constant(M=M, y = ratio$cf0[t1:t2])
+  ratio$ratiofit$t1 <- t1
+  ratio$ratiofit$t2 <- t2
+  ratio$ratiofit$t <- ratio$ratiofit.tsboot 
+  ratio$ratiofit$t0 <- c(ratio$ratiofit$par[1], ratio$ratiofit$value)
+  ratio$ratiofit$se <- sd(ratiofit.tsboot[c(1:(dim(ratiofit.tsboot)[1]-1)),1] )
+  ratio$ratiofit$cf <- ratio$cf
+ratio$ratiofit$ii <- ratio$ii
+ratio$ratiofit$dof <- ratio$dof
+  ratio$chisq <- ratio$ratiofit$value
+  ratio$ratiofit$chisq <- ratio$ratiofit$value
+  ratio$Qval <- 1-pchisq(ratio$chisq, ratio$dof)
    lines(x=c(t1,t2),
                    y=c(ratio$ratiofit$par[1],ratio$ratiofit$par[1]),
                              col=.col,
                              lwd=1.3)
+  summary_ratiofit(ratio)
         #pcol <- col2rgb("black",alpha=TRUE)/255                                                                                                   
         #pcol[4] <- 0.65
          #     pcol <- rgb(red=pcol[1],green=pcol[2],blue=pcol[3],alpha=pcol[4])
@@ -345,7 +404,6 @@ plot_tau <- function(data, n_points = 32, n_tau = 8){
 }
 
 
-ratioData <- list() 
 
 calc.cf <- function(gi, gf, mom_tag, test, letter){
     c2<- analyse(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag, path_letter = letter, conf_start = min_conf)
@@ -497,7 +555,7 @@ calc.divideby <- function(factor=1/2){
 #' @examples
 
 plot_comb <- function(g.i, g.f, mom.tag, bool){
-   
+    plotInfo <- list() 
     if(calcAll){
         num_i <- str_count(mom.tag, "1")
         p_tot_tag <- sprintf("p_tot%i", num_i)
@@ -511,20 +569,24 @@ plot_comb <- function(g.i, g.f, mom.tag, bool){
     pdf(sprintf("output/NJN_%s_%s_%s_%i.pdf", g.i, g.f, mom.tag, bool))
     options(warn = -1)
     print(sprintf("NJN_%s_%s_%s_%i.pdf", g.i, g.f, mom.tag, bool ))
-    plot_cf(c2, main="2pt-function correlator", log="y", ylab="C", xlab="t")
-    plot_cf(c3, main="3pt-function correlator", log="y", ylab="C", xlab="t") #legend_title="N-J-N")
+    plot.cf(c2, main="2pt-function correlator", log="y", ylab="C", xlab="t")
+    plot.cf(c3, main="3pt-function correlator", log="y", ylab="C", xlab="t") #legend_title="N-J-N")
     meff <- bootstrap.effectivemass(c2, type="log")
     meff <- fit.effectivemass(meff, t1=par.t1, t2 = par.t2)
-    plot_effectivemass(meff, main="Effective mass plot", ylab="meff", xlab="t")
+    plot.effectivemass(meff, main="Effective mass plot", ylab="meff", xlab="t")
     print(summary.effectivemassfit(meff))
-    if(calcAll){
+    plotInfo$massfit <- summary.effectivemassfit(meff)
+    plotInfo$ratiofit <- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
 
-        ratioData[[p_tot_tag]][[g.i]][[g.f]] <<- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
-    } else {
-        ratioData <<- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
-    }
+    #if(calcAll){
+
+    #    ratioData[[p_tot_tag]][[g.i]][[g.f]] <<- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
+    #} else {
+    #    ratioData <<- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
+    #}
     #plot_tau(plotData, n_tau=par.tau)
     dev.off()
+    return(plotInfo)
 }
 
 #' plot Function to compare 2 ratios

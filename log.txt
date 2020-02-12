@@ -1,0 +1,558 @@
+[1] "NJN_Gi_Cg5_Gf_Cg5_px00py00pz00_0.pdf"
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.5154173 
+dm	=	 0.0007436795 
+chisqr	=	 42.38682 
+dof	=	 7 
+chisqr/dof=	 6.055261 
+Quality of the fit (p-value): 4.380021e-07 
+NULL
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.5154173 
+dm	=	 0.0007436795 
+chisqr	=	 42.38682 
+dof	=	 7 
+chisqr/dof=	 6.055261 
+Quality of the fit (p-value): 4.380021e-07 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+time range from 5  to  12 
+R	=	 -15.45995 
+dR	=	 0.128208 
+chisqr	=	 
+dof	=	 7 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+[1] "NJN_Gi_Cg5gt_Gf_Cg5gt_px00py00pz00_0.pdf"
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.5180004 
+dm	=	 0.0009273983 
+chisqr	=	 46.47061 
+dof	=	 7 
+chisqr/dof=	 6.638659 
+Quality of the fit (p-value): 7.079183e-08 
+NULL
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.5180004 
+dm	=	 0.0009273983 
+chisqr	=	 46.47061 
+dof	=	 7 
+chisqr/dof=	 6.638659 
+Quality of the fit (p-value): 7.079183e-08 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+time range from 5  to  12 
+R	=	 -14.16851 
+dR	=	 0.2805372 
+chisqr	=	 
+dof	=	 7 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+[1] "NJN_Gi_Cg5_Gf_Cg5gt_px00py00pz00_0.pdf"
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.5230851 
+dm	=	 0.003682328 
+chisqr	=	 13.89686 
+dof	=	 7 
+chisqr/dof=	 1.985266 
+Quality of the fit (p-value): 0.05304653 
+NULL
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.5230851 
+dm	=	 0.003682328 
+chisqr	=	 13.89686 
+dof	=	 7 
+chisqr/dof=	 1.985266 
+Quality of the fit (p-value): 0.05304653 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+time range from 5  to  12 
+R	=	 -16.03112 
+dR	=	 1.041649 
+chisqr	=	 
+dof	=	 7 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+[1] "NJN_Gi_Cg5gt_Gf_Cg5_px00py00pz00_0.pdf"
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.5280483 
+dm	=	 0.003830168 
+chisqr	=	 18.90621 
+dof	=	 7 
+chisqr/dof=	 2.700887 
+Quality of the fit (p-value): 0.008486273 
+NULL
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.5280483 
+dm	=	 0.003830168 
+chisqr	=	 18.90621 
+dof	=	 7 
+chisqr/dof=	 2.700887 
+Quality of the fit (p-value): 0.008486273 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+time range from 5  to  12 
+R	=	 -13.69525 
+dR	=	 1.218333 
+chisqr	=	 
+dof	=	 7 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+[1] "NJN_Gi_Cg5_Gf_Cg5_px01py00pz00_0.pdf"
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 347 ( 10.84375 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.4421742 
+dm	=	 0.2004198 
+chisqr	=	 3.130109 
+dof	=	 7 
+chisqr/dof=	 0.4471585 
+Quality of the fit (p-value): 0.8727108 
+NULL
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 347 ( 10.84375 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.4421742 
+dm	=	 0.2004198 
+chisqr	=	 3.130109 
+dof	=	 7 
+chisqr/dof=	 0.4471585 
+Quality of the fit (p-value): 0.8727108 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+time range from 5  to  12 
+R	=	 -74.69209 
+dR	=	 466.5684 
+chisqr	=	 
+dof	=	 7 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+[1] "NJN_Gi_Cg5gt_Gf_Cg5gt_px01py00pz00_0.pdf"
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 313 ( 11.17857 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.5481207 
+dm	=	 0.2128261 
+chisqr	=	 1.64567 
+dof	=	 6 
+chisqr/dof=	 0.2742784 
+Quality of the fit (p-value): 0.9492381 
+NULL
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 313 ( 11.17857 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.5481207 
+dm	=	 0.2128261 
+chisqr	=	 1.64567 
+dof	=	 6 
+chisqr/dof=	 0.2742784 
+Quality of the fit (p-value): 0.9492381 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+time range from 5  to  12 
+R	=	 25.08135 
+dR	=	 303.827 
+chisqr	=	 
+dof	=	 7 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+[1] "NJN_Gi_Cg5_Gf_Cg5gt_px01py00pz00_0.pdf"
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 287 ( 8.96875 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.4180603 
+dm	=	 0.1877333 
+chisqr	=	 2.02769 
+dof	=	 7 
+chisqr/dof=	 0.2896701 
+Quality of the fit (p-value): 0.9582919 
+NULL
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 287 ( 8.96875 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.4180603 
+dm	=	 0.1877333 
+chisqr	=	 2.02769 
+dof	=	 7 
+chisqr/dof=	 0.2896701 
+Quality of the fit (p-value): 0.9582919 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+time range from 5  to  12 
+R	=	 -37.0879 
+dR	=	 776.5853 
+chisqr	=	 
+dof	=	 7 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+[1] "NJN_Gi_Cg5gt_Gf_Cg5_px01py00pz00_0.pdf"
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 348 ( 12.42857 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.460794 
+dm	=	 0.2346232 
+chisqr	=	 2.354985 
+dof	=	 6 
+chisqr/dof=	 0.3924975 
+Quality of the fit (p-value): 0.8843311 
+NULL
+
+ ** Result of effective mass analysis **
+
+no. measurements	=	 878 
+type	=	 log 
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 348 ( 12.42857 %)
+NAs replaced in fit: TRUE 
+time range from 5  to  12 
+No correlation functions 1 
+correlated fit	=	 FALSE 
+m	=	 0.460794 
+dm	=	 0.2346232 
+chisqr	=	 2.354985 
+dof	=	 6 
+chisqr/dof=	 0.3924975 
+Quality of the fit (p-value): 0.8843311 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+time range from 5  to  12 
+R	=	 -27.03117 
+dR	=	 1379.649 
+chisqr	=	 
+dof	=	 7 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+time range from 5  to  12 
+R	=	 -37.97265 
+dR	=	 173.0166 
+chisqr	=	 
+dof	=	 7 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+time range from 5  to  12 
+R	=	 23.71498 
+dR	=	 237.7935 
+chisqr	=	 
+dof	=	 7 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 
+boot.l	=	 
+Time extend	=	 
+NA count in fitted bootstrap samples:	 0 ( NaN %)
+time range from  to  
+R	=	 
+dR	=	 
+chisqr	=	 
+dof	=	 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+time range from 5  to  12 
+R	=	 -15.95056 
+dR	=	 1.012193 
+chisqr	=	 
+dof	=	 7 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+time range from 5  to  12 
+R	=	 -13.86817 
+dR	=	 1.24099 
+chisqr	=	 
+dof	=	 7 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 
+boot.l	=	 
+Time extend	=	 
+NA count in fitted bootstrap samples:	 0 ( NaN %)
+time range from  to  
+R	=	 
+dR	=	 
+chisqr	=	 
+dof	=	 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+time range from 5  to  12 
+R	=	 -44.39445 
+dR	=	 909.6447 
+chisqr	=	 
+dof	=	 7 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 400 
+boot.l	=	 2 
+Time extend	=	 64 
+NA count in fitted bootstrap samples:	 0 ( 0 %)
+time range from 5  to  12 
+R	=	 0.5546724 
+dR	=	 677.148 
+chisqr	=	 
+dof	=	 7 
+chisqr/dof=	  
+Quality of the fit (p-value): 
+
+ ** Result of ratio analysis **
+
+boot.R	=	 
+boot.l	=	 
+Time extend	=	 
+NA count in fitted bootstrap samples:	 0 ( NaN %)
+time range from  to  
+R	=	 
+dR	=	 
+chisqr	=	 
+dof	=	 
+chisqr/dof=	  
+Quality of the fit (p-value): 
