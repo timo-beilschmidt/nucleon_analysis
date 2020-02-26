@@ -37,36 +37,6 @@ projector <- function(sgn, gamma0){
 
 
 
-##############################################################
-#Setting up variables to look at
-##############################################################
-
-gi= "Gi_Cg5"
-gf = "Gf_Cg5"
-#gi= "Gi_Cg5gt"
-#gf = "Gf_Cg5gt"
-mom_tag <- "px00py00pz00"
-max_conf <- 1756   
-min_conf <- 4
-stepwidth <- 4
-test <- TRUE
-calcAll <- TRUE
-doGEVP <- FALSE
-doTau <- FALSE
-par.tau <- 8
-time <- 64
-par.t1 <- 5
-par.t2 <- 12
-
-if(test){
-    max_conf <-100
-    min_conf <- 4
-    stepwidth <- 24
-}
-
-num_conf <- (max_conf-min_conf)/stepwidth+1
-
-
 read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, .gi= "Gi_Cg5", .gf = "Gf_Cg5", .mom_tag){
 
     diagrams <- list()
@@ -182,14 +152,27 @@ analyse <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_lette
                 #is.raw_cf(nn)
                 #get_plotdata_raw_cf(nn, "both", TRUE, TRUE) 
                 # get soruce time
-                t_src <- matrix(unlist(strsplit(src_str_alt, "_")))[1]
-                t_src <- strtoi(substring(t_src, 2, nchar(t_src)))
-              
+                src_mat <- matrix(unlist(strsplit(src_str_alt, "_")))
+                t_src <- strtoi(substring(src_mat[1], 2, nchar(src_mat[1])))
+                x_src <- strtoi(substring(src_mat[2], 2, nchar(src_mat[2])))
+                y_src <- strtoi(substring(src_mat[3], 2, nchar(src_mat[3])))
+                z_src <- strtoi(substring(src_mat[4], 2, nchar(src_mat[4])))
+                
+                src_vec <- c( x_src, y_src, z_src)#t_src,
+
+                mom_mat <- matrix(unlist(strsplit(mom_tag, "p")))
+                x_mom <- strtoi(substring(mom_mat[2], 2, nchar(mom_mat[2])))
+                y_mom <- strtoi(substring(mom_mat[3], 2, nchar(mom_mat[3])))
+                z_mom <- strtoi(substring(mom_mat[4], 2, nchar(mom_mat[4])))
+                
+                mom_vec <- c(x_mom, y_mom, z_mom)
+
                 # add phasefactor
                 for (t in c(1:T)) {
                     del_t <- (T + t-1 - t_src) %% T
                     phasefactor <- exp(1i * 3 * pi * del_t / T)
-                    nn[,,t] <- nn[,,t]*phasefactor
+                    impulsfactor <- exp(-1i * (mom_vec * src_vec))
+                    nn[,,t] <- nn[,,t]*phasefactor*impulsfactor
                     # multiply projection matrix and take trace
                     cor[t,src,((conf-conf_start)/step+1)] <- trace(proj_p %*% nn[,,t])
                     cor_m[t,src,((conf-conf_start)/step+1)] <- trace(proj_m %*% nn[,,t])
@@ -305,16 +288,16 @@ summary_ratiofit <- function(object, ..., verbose = FALSE) {
 #' @examples
 #' 
 
-plot_ratio <- function(c2, c3 ,t1, t2, add=FALSE, .col="black"){
+plot_ratio <- function(c2, c3 ,t1, t2, add=FALSE, .col="black", ...){
 
     df <- bootstrap.ratio(c2, c3, R=5000)
     std = apply(df$t, c(2), sd )
     std = std/sqrt(length(std))
     if(!add){
-   plotwitherror(x=c(1:(c2$T)) , y=Re(df$t0[1:(c2$T)]), dy=Re(std[1:(c2$T)]) , main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-30,30), col=.col,  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE) 
+   plotwitherror(x=c(1:(c2$T)) , y=Re(df$t0[1:(c2$T)]), dy=Re(std[1:(c2$T)]) , main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30), col=.col,  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE, ...) 
     } else {
 
-   pointswitherror(x=c(1:(c2$T)) , y=Re(df$t0[1:(c2$T)]), dy=Re(std[1:(c2$T)]) , main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30),ylim = c(-30,30), col=.col,  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE) 
+   pointswitherror(x=c(1:(c2$T)) , y=Re(df$t0[1:(c2$T)]), dy=Re(std[1:(c2$T)]) , main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30), col=.col,  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE, ...) 
     }
   ratio <- cf_meta(.cf=cf_orig(cf=df$t), T=c2$T, symmetrised=TRUE)
   ratio <- bootstrap.cf(ratio)
@@ -332,7 +315,7 @@ plot_ratio <- function(c2, c3 ,t1, t2, add=FALSE, .col="black"){
             ratiofit.tsboot[i, 1] <- opt$par[1]
             ratiofit.tsboot[i, 2] <- opt$value
             }
-     ratio$ratiofit.tsboot <- ratiofit.tsboot
+  ratio$ratiofit.tsboot <- ratiofit.tsboot
   ratio$ratiofit <- fit.constant(M=M, y = ratio$cf0[t1:t2])
   ratio$ratiofit$t1 <- t1
   ratio$ratiofit$t2 <- t2
@@ -340,23 +323,23 @@ plot_ratio <- function(c2, c3 ,t1, t2, add=FALSE, .col="black"){
   ratio$ratiofit$t0 <- c(ratio$ratiofit$par[1], ratio$ratiofit$value)
   ratio$ratiofit$se <- sd(ratiofit.tsboot[c(1:(dim(ratiofit.tsboot)[1]-1)),1] )
   ratio$ratiofit$cf <- ratio$cf
-ratio$ratiofit$ii <- ratio$ii
-ratio$ratiofit$dof <- ratio$dof
+  ratio$ratiofit$ii <- ratio$ii
+  ratio$ratiofit$dof <- ratio$dof
   ratio$chisq <- ratio$ratiofit$value
   ratio$ratiofit$chisq <- ratio$ratiofit$value
   ratio$Qval <- 1-pchisq(ratio$chisq, ratio$dof)
-   lines(x=c(t1,t2),
+  lines(x=c(t1,t2),
                    y=c(ratio$ratiofit$par[1],ratio$ratiofit$par[1]),
                              col=.col,
                              lwd=1.3)
   summary_ratiofit(ratio)
-        #pcol <- col2rgb("black",alpha=TRUE)/255                                                                                                   
-        #pcol[4] <- 0.65
-         #     pcol <- rgb(red=pcol[1],green=pcol[2],blue=pcol[3],alpha=pcol[4])
-          #    rect(xleft=ratio$ratiofit$t1, ybottom=ratio$ratiofit$t0[1]-ratio$ratiofit$se[1],
-           #                   xright=ratio$ratiofit$t2, ytop=ratio$ratiofit$t0[1]+ratio$ratiofit$se[1],
-            #                             col=pcol,
-             #                            border=NA)
+        pcol <- col2rgb(.col,alpha=TRUE)/255                                                                                                   
+        pcol[4] <- 0.65
+              pcol <- rgb(red=pcol[1],green=pcol[2],blue=pcol[3],alpha=pcol[4])
+              rect(xleft=ratio$ratiofit$t1, ybottom=ratio$ratiofit$t0[1]-ratio$ratiofit$se[1],
+                              xright=ratio$ratiofit$t2, ytop=ratio$ratiofit$t0[1]+ratio$ratiofit$se[1],
+                                         col=pcol,
+                                         border=NA)
   return(ratio)
 
 #if(doTau){
@@ -405,19 +388,27 @@ plot_tau <- function(data, n_points = 32, n_tau = 8){
 
 
 
-calc.cf <- function(gi, gf, mom_tag, test, letter){
-    c2<- analyse(corrKey = "N-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag=mom_tag, path_letter = letter, conf_start = min_conf)
-    if(strcmp(gi, "Gi_Cg5gt") || strcmp(gf, "Gf_Cg5gt")){
+calc_cf <- function(.gi, .gf, .mom_tag, test, letter){
+    c2<- analyse(corrKey = "N-N", gi= .gi, gf = .gf, n_conf=max_conf, step = stepwidth, mom_tag=.mom_tag, path_letter = letter, conf_start = min_conf)
+    if(strcmp(.gi, "Gi_Cg5gt") || strcmp(.gf, "Gf_Cg5gt")){
         l <- "b"
     } else {
         l <- letter
     }
-    c3 <- analyse(corrKey = "N-J-N", gi= gi, gf = gf, n_conf=max_conf, step = stepwidth, mom_tag = mom_tag, path_letter = l, conf_start = min_conf)
+    c3 <- analyse(corrKey = "N-J-N", gi=.gi, gf = .gf, n_conf=max_conf, step = stepwidth, mom_tag = .mom_tag, path_letter = l, conf_start = min_conf)
 
     return(invisible(list("c2"=c2, "c3"=c3)))
 }
 
-calc.all <- function(test, letter){
+#' calc_all Function to calculate all 2pt and 3pt functions for every momemtum in mom_tag and and source sink matrix combination in gi.
+#'
+#' Uses calc all 2pt cfs 
+#' @param 
+#' @keywords
+#' @export
+#' @examples
+
+calc_all <- function(test, letter){
         for(p_tag in mom_tag){
             num_i <- str_count(p_tag, "1")
             factor <-1
@@ -438,8 +429,8 @@ calc.all <- function(test, letter){
 
             }
             for( g in gi){
-           # d[[sprintf("%s_%s_%s", g[1], g[2], p_tag)]] <- calc.cf(g[1], g[2], p_tag, test)
-            cf <- calc.cf(g[1], g[2], p_tag, test, letter)
+           # d[[sprintf("%s_%s_%s", g[1], g[2], p_tag)]] <- calc_cf(g[1], g[2], p_tag, test)
+            cf <- calc_cf(g[1], g[2], p_tag, test, letter)
             if(is.null(cf_2pt[[p_tot_tag]][[g[1]]])){
                 
                 cf_2pt[[p_tot_tag]][[g[1]]] <<- list()
@@ -468,70 +459,27 @@ calc.all <- function(test, letter){
 #' @export
 #' @examples
 
-gevp_2pt <- function(){
+gevp_2pt <- function(p_tag = "p_tot0", g1 = "Cg5", g2= "Cg5gt" ){
 
-
-       mean_offdia <- add.cf(cf_2pt$p_tot0$Gi_Cg5$Gf_Cg5gt, cf_2pt$p_tot0$Gi_Cg5gt$Gf_Cg5, a=0.5, b=0.5)
-        gevp_cf <<- c(cf_2pt$p_tot0$Gi_Cg5$Gf_Cg5gt, mean_offdia)
-        gevp_cf <<- c(gevp_cf, mean_offdia)
-        gevp_cf <<- c(gevp_cf, cf_2pt$p_tot0$Gi_Cg5gt$Gf_Cg5gt)
-
-        return(invisible(gevp(gevp_cf$cf, gevp_cf$Time, element.order=c(1:(gevp_cf$nrObs)))))
-
+        g1i <- paste("Gi_",g1)
+        g1f <- paste("Gf_", g1)
+        g2i <- paste("Gi_",g2)
+        g2f <- paste("Gf_", g2)
+       mean_offdia <- add.cf(cf_2pt[[p_tag]][[g1i]][[g2f]], cf_2pt[[p_tag]][[g2i]][[g1f]], a=0.5, b=0.5)
+        gevp_cf <- c(cf_2pt[[p_tag]][[g1i]][[g1f]], mean_offdia)
+        gevp_cf <- c(gevp_cf, mean_offdia)
+        gevp_cf <- c(gevp_cf, cf_2pt[[p_tag]][[g2i]][[g2f]])
+        
+        gevp_cf <- bootstrap.cf(gevp_cf)
+        gevp_cf <- bootstrap.gevp(gevp_cf, element.order=c(1:(gevp_cf$nrObs)))
+        
+        amp <- gevp2amplitude(gevp_cf, ratios[[p_tag]][[g1i]][[g1f]]$massfit)#, type="log")
+        plot.gevp.amplitude(amp, main=paste("Gevp Amplitude Plot of ",g1, " and ", g2, " at ", p_tag ), ylab="gevp", xlab="t")
+        return(invisible(amp))
 }
 
-#if(calcAll){
-#
-#    mom_tag <- list(   # "px01py01pz-01",
-#                       # "px01py01pz01",
-#                       # "px01py-01pz-01",
-#                       # "px01py-01pz01",
-#                       # "px-01py01pz-01",
-#                       # "px-01py01pz01",
-#                       # "px-01py-01pz-01",
-#                       # "px-01py-01pz01",
-#                       # "px01py01pz00",
-#                       # "px01py-01pz00",
-#                       # "px-01py01pz00",
-#                       # "px-01py-01pz00",
-#                       # "px01py00pz-01",
-#                       # "px01py00pz01",
-#                       # "px-01py00pz-01",
-#                       # "px-01py00pz01",
-#                       # "px00py01pz-01",
-#                       # "px00py01pz01",
-#                       # "px00py-01pz-01",
-#                       # "px00py-01pz01",
-#                        "px01py00pz00",
-#                        "px-01py00pz00",
-#                        "px00py01pz00",
-#                        "px00py-01pz00",
-#                        "px00py00pz-01",
-#                        "px00py00pz01",
-#                        "px00py00pz00"
-#                                              )
-#    gi <- list(
-#                    c("Gi_Cg5","Gf_Cg5"),
-#                    c( "Gi_Cg5gt","Gf_Cg5gt"),
-#                    #c( "Gi_Cgt","Gf_Cgt"),
-#                    #c( "Gi_C","Gf_C"),
-#                    c( "Gi_Cg5","Gf_Cg5gt"),
-#                    c( "Gi_Cg5gt","Gf_Cg5")
-#                    
-#                                            )
-#        cf_2pt <- list()
-#        cf_3pt <- list()
-#        
-#        calc.all(test, "ab")
-#        #calc.all(test, "b")
-#
-#} else {
-#    #d[[sprintf("%s_%s_%s", gi, gf, mom_tag)]] <- calc.cf(gi, gf, mom_tag, test)
-#            cf <- calc.cf(gi, gf, mom_tag, test)
-#            
-#}
 
-calc.divideby <- function(factor=1/2){
+calc_divideby <- function(factor=1/2){
 
 
         for(p_tag in mom_tag){
@@ -573,10 +521,11 @@ plot_comb <- function(g.i, g.f, mom.tag, bool){
     plot.cf(c3, main="3pt-function correlator", log="y", ylab="C", xlab="t") #legend_title="N-J-N")
     meff <- bootstrap.effectivemass(c2, type="log")
     meff <- fit.effectivemass(meff, t1=par.t1, t2 = par.t2)
-    plot.effectivemass(meff, main="Effective mass plot", ylab="meff", xlab="t")
+    plot.effectivemass(meff, main="Effective mass plot", ylab="meff", xlab="t", ylim=c(0,1))
     print(summary.effectivemassfit(meff))
-    plotInfo$massfit <- summary.effectivemassfit(meff)
-    plotInfo$ratiofit <- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
+    plotInfo$massfit <- meff 
+    plotInfo$masssumm <- summary.effectivemassfit(meff)
+    plotInfo$ratiofit <- plot_ratio(c2,c3, t1=par.t1, t2=par.t2, ylim=c(-25, -5))
 
     #if(calcAll){
 
@@ -605,12 +554,14 @@ plot_2combs <- function(gi1 = "Gi_Cg5", gf1 = "Gf_Cg5", gi2 = "Gi_Cg5gt", gf2 = 
         p_tot_tag <- sprintf("p_tot%i", num_i)
         c2 <- bootstrap.cf(cf_2pt[[p_tot_tag]][[gi1]][[gf1]])
         c3 <- bootstrap.cf(cf_3pt[[p_tot_tag]][[gi1]][[gf1]])
-
+        
+        cat("Ratio: ", gi1, " " , gf1)
         ratio1 <- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
 
         c2 <- bootstrap.cf(cf_2pt[[p_tot_tag]][[gi2]][[gf2]])
         c3 <- bootstrap.cf(cf_3pt[[p_tot_tag]][[gi2]][[gf2]])
 
+        cat("Ratio: ", gi2, " " , gf2)
         ratio2 <- plot_ratio(c2,c3, t1=par.t1, t2=par.t2, add=TRUE, .col=col2)
 
 
