@@ -17,12 +17,12 @@ mom_tag <- "px00py00pz00"
 max_conf <- 1756   
 min_conf <- 4
 stepwidth <- 4
-recalc <- TRUE
+recalc <- FALSE
 test <- FALSE
 calcAll <- TRUE
 doGEVP <- FALSE
 doTau <- FALSE
-doPlot <- FALSE
+doPlot <- TRUE
 par.tau <- 8
 time <- 64
 par.t1 <- 6
@@ -80,31 +80,42 @@ num_conf <- (max_conf-min_conf)/stepwidth+1
             cf_2pt <- list()
             cf_3pt <- list()
             ratioData <- list() 
-            calc_all(test, "ab")
+            calc_all(test, "ab", particle="P")
+            calc_all(test, "b", particle="N")
             #calc_all(test, "b")
             sink("./log.txt")
-            for(p_tag in c(0:1)){
-                p_tot_tag <- sprintf("p_tot%i", p_tag)
-                if(p_tag>0){
-                    num <- strrep("1", p_tag)
-                } else {
-                    num <- "0"
-                }
-                if(is.null(ratios[[p_tot_tag]])){
-                    ratios[[p_tot_tag]] <- list()
+            for(part in c("P", "N")){
 
-                }
-                for( g in gi){
-                    if(is.null(ratios[[p_tot_tag]][[g[1]]])){
-                        ratios[[p_tot_tag]][[g[1]]] <- list()
+                for(p_tag in c(0:1)){
+
+                    p_tot_tag <- sprintf("p_tot%i", p_tag)
+                    if(p_tag>0){
+                        num <- strrep("1", p_tag)
+                    } else {
+                        num <- "0"
                     }
-                    ratios[[p_tot_tag]][[g[1]]][[g[2]]] <- plot_comb(g[1], g[2], num, test ) 
+                    
+                    if(is.null(ratios[[part]])){
+                        ratios[[part]] <- list()
 
+                    }
+
+                    if(is.null(ratios[[part]][[p_tot_tag]])){
+                        ratios[[part]][[p_tot_tag]] <- list()
+
+                    }
+                    for( g in gi){
+                        if(is.null(ratios[[part]][[p_tot_tag]][[g[1]]])){
+                            ratios[[part]][[p_tot_tag]][[g[1]]] <- list()
+                        }
+                        ratios[[part]][[p_tot_tag]][[g[1]]][[g[2]]] <- plot_comb(g[1], g[2], num, test, particle=part ) 
+
+                    }
                 }
-            }
-            sink()
+                sink()
 
-        } 
+            } 
+        }
     
     } else {
         #d[[sprintf("%s_%s_%s", gi, gf, mom_tag)]] <- calc_cf(gi, gf, mom_tag, test)
@@ -141,5 +152,20 @@ if(doPlot){
     #ratios$k <- plot_vs(gi1 = "Gi_Cg5", gf1 = "Gf_Cg5gt", gi2 = "Gi_Cg5gt", gf2 = "Gf_Cg5", mom.tag = "p0", col2 = "blue")
 
     #ratios$l <- plot_vs(gi1 = "Gi_Cg5", gf1 = "Gf_Cg5gt", gi2 = "Gi_Cg5gt", gf2 = "Gf_Cg5", mom.tag = "p1", col2 = "blue")
+            for(part in c("P", "N")){
+
+                for(p_tag in c(0:1)){
+
+                    p_tot_tag <- sprintf("p_tot%i", p_tag)
+                    if(p_tag>0){
+                        num <- strrep("1", p_tag)
+                    } else {
+                        num <- "0"
+                    }
+                    for( g in gi){
+                        ratios[[part]][[p_tot_tag]][[g[1]]][[g[2]]] <- plot_comb(g[1], g[2], num, test, particle=part ) 
+                    }
+                }
+            }
 
 }

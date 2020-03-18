@@ -37,11 +37,11 @@ projector <- function(sgn, gamma0){
 
 
 
-read_dia <- function(key, nrDiagram=4, file_str, src_str_alt, .gi= "Gi_Cg5", .gf = "Gf_Cg5", .mom_tag){
+read_dia <- function(key, nrDiagram=c(1:4), file_str, src_str_alt, .gi= "Gi_Cg5", .gf = "Gf_Cg5", .mom_tag){
 
     diagrams <- list()
     corrKey <- key
-    for (t in c(1:nrDiagram)) {
+    for (t in nrDiagram) {
           t_name <-  paste("t",toString(t), sep = "")
           key_str <- paste("/",corrKey,"/", src_str_alt,"/",.gf,"/Gc_id/",.gi,"/QX0_QY0_QZ0/",t_name,"/", .mom_tag , sep = "")
           d <- aff_read_key(file_str, key_str, 4*4*time)
@@ -118,12 +118,12 @@ analyse <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_lette
                     src_str_alt <- paste0(c(tmp_str[1:(ind-1)], "_", tmp_str[ind:(nchar(src_str_alt))]), collapse="")
                 }
               
-                if(strcmp(corrKey, "N-N")){
-                    key_str <- paste("/",corrKey,"/", src_str_alt,"/",gi,"/",gf,"/n1/", mom_tag, sep = "")
+                if(strcmp(corrKey, "P-P")){
+                    key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n1/", mom_tag, sep = "")
                     d <- aff_read_key(file_str, key_str, 4*4*T)
                     # create SpinxSpinxTime matrix n1
                     n1 <- array(d, dim = c(4, 4, T))
-                    key_str <- paste("/",corrKey,"/", src_str_alt,"/",gi,"/",gf,"/n2/", mom_tag, sep = "")
+                    key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n2/", mom_tag, sep = "")
                     d <- aff_read_key(file_str, key_str, 4*4*T)
 
                     # create SpinxSpinxTime matrix n2
@@ -131,23 +131,43 @@ analyse <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_lette
 
                     nn <- n1 + n2
                 
-                } else if (strcmp(corrKey, "N-ubGu-N")) {
-
-                    nn <- read_dia(corrKey, nrDiagram =4 , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
-                } else if (strcmp(corrKey, "N-dbGd-N")) {
-
-                    nn <- read_dia(corrKey, nrDiagram =2 , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
-
-                } else if (strcmp(corrKey, "N-J-N") & strcmp(letter, "a")) {
+                } else if (strcmp(corrKey, "N-N") & strcmp(letter, "b")) {
                     
-                    nn <- read_dia("N-ubGu-N", nrDiagram =4 , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
-                    nn <- nn + read_dia("N-dbGd-N", nrDiagram =2 , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
+                    key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n3/", mom_tag, sep = "")
+                    d <- aff_read_key(file_str, key_str, 4*4*T)
+                    # create SpinxSpinxTime matrix n1
+                    n1 <- array(d, dim = c(4, 4, T))
+                    key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n4/", mom_tag, sep = "")
+                    d <- aff_read_key(file_str, key_str, 4*4*T)
 
-                } else if (strcmp(corrKey, "N-J-N") & strcmp(letter, "b")){
+                    # create SpinxSpinxTime matrix n2
+                    n2 <- array(d, dim = c(4, 4, T))
+
+                    nn <- n1 + n2
+                } else if (strcmp(corrKey, "P-ubGu-P")) {
                     
-                    nn <- read_dia("N-qbGq-N", nrDiagram =6 , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
+                    key <- "N-ubGu-N"
+                    nn <- read_dia(key, nrDiagram =c(1:4) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
+                } else if (strcmp(corrKey, "P-dbGd-P")) {
+                    key <- "N-dbGd-N"
+                    nn <- read_dia(key, nrDiagram =c(1:2) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
 
+                } else if (strcmp(corrKey, "P-J-P") & strcmp(letter, "a")) {
+                    nn <- read_dia("N-ubGu-N", nrDiagram =c(1:4) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
+                    nn <- nn + read_dia("N-dbGd-N", nrDiagram =c(1:2) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
+
+                } else if (strcmp(corrKey, "P-J-P") & strcmp(letter, "b")){
+                    
+                    nn <- read_dia("N-qbGq-N", nrDiagram =c(1:6) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
+
+                }  else if (strcmp(corrKey, "N-J-N") & strcmp(letter, "b")){
+                    
+                    nn <- read_dia("N-qbGq-N", nrDiagram =c(7:12) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
+                } else {
+                    
+                    stop("No valid corrKey and letter combination given to analyse!")
                 }
+
 
                 #is.raw_cf(nn)
                 #get_plotdata_raw_cf(nn, "both", TRUE, TRUE) 
@@ -388,14 +408,16 @@ plot_tau <- function(data, n_points = 32, n_tau = 8){
 
 
 
-calc_cf <- function(.gi, .gf, .mom_tag, test, letter){
-    c2<- analyse(corrKey = "N-N", gi= .gi, gf = .gf, n_conf=max_conf, step = stepwidth, mom_tag=.mom_tag, path_letter = letter, conf_start = min_conf)
+calc_cf <- function(.gi, .gf, .mom_tag, test, letter, particle = "P" ){
+    str_2pt <- paste(particle, "-", particle, sep="")
+    str_3pt <- paste(particle, "-J-", particle, sep="") 
+    c2<- analyse(corrKey = str_2pt, gi= .gi, gf = .gf, n_conf=max_conf, step = stepwidth, mom_tag=.mom_tag, path_letter = letter, conf_start = min_conf)
     if(strcmp(.gi, "Gi_Cg5gt") || strcmp(.gf, "Gf_Cg5gt")){
         l <- "b"
     } else {
         l <- letter
     }
-    c3 <- analyse(corrKey = "N-J-N", gi=.gi, gf = .gf, n_conf=max_conf, step = stepwidth, mom_tag = .mom_tag, path_letter = l, conf_start = min_conf)
+    c3 <- analyse(corrKey = str_3pt, gi=.gi, gf = .gf, n_conf=max_conf, step = stepwidth, mom_tag = .mom_tag, path_letter = l, conf_start = min_conf)
 
     return(invisible(list("c2"=c2, "c3"=c3)))
 }
@@ -408,7 +430,13 @@ calc_cf <- function(.gi, .gf, .mom_tag, test, letter){
 #' @export
 #' @examples
 
-calc_all <- function(test, letter){
+calc_all <- function(test, letter, particle="P"){
+
+    if(strcmp(particle, "N") & !strcmp(letter, "b") ){
+
+        stop("Neutron data only in b-stream!")
+
+    }
         for(p_tag in mom_tag){
             num_i <- str_count(p_tag, "1")
             factor <-1
@@ -420,31 +448,35 @@ calc_all <- function(test, letter){
                 factor <- 1./8
             }
 
+            if(is.null(cf_2pt[[particle]])){
+                cf_2pt[[particle]] <<- list()
+                cf_3pt[[particle]] <<- list()
+
+
+            }
             p_tot_tag <- sprintf("p_tot%i", num_i)
-            if(is.null(cf_2pt[[p_tot_tag]])){
-                cf_2pt[[p_tot_tag]] <<- list()
-                cf_3pt[[p_tot_tag]] <<- list()
-                ratioData[[p_tot_tag]] <<- list()
+            if(is.null(cf_2pt[[particle]][[p_tot_tag]])){
+                cf_2pt[[particle]][[p_tot_tag]] <<- list()
+                cf_3pt[[particle]][[p_tot_tag]] <<- list()
 
 
             }
             for( g in gi){
            # d[[sprintf("%s_%s_%s", g[1], g[2], p_tag)]] <- calc_cf(g[1], g[2], p_tag, test)
-            cf <- calc_cf(g[1], g[2], p_tag, test, letter)
-            if(is.null(cf_2pt[[p_tot_tag]][[g[1]]])){
+            cf <- calc_cf(g[1], g[2], p_tag, test, letter, particle)
+            if(is.null(cf_2pt[[particle]][[p_tot_tag]][[g[1]]])){
                 
-                cf_2pt[[p_tot_tag]][[g[1]]] <<- list()
-                cf_3pt[[p_tot_tag]][[g[1]]] <<- list()
-                ratioData[[p_tot_tag]][[g[1]]] <<- list()
+                cf_2pt[[particle]][[p_tot_tag]][[g[1]]] <<- list()
+                cf_3pt[[particle]][[p_tot_tag]][[g[1]]] <<- list()
 
             }
-            if(is.null(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]])){
-                cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- mul.cf(cf$c2 , factor)
-                cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- mul.cf(cf$c3 , factor)
+            if(is.null(cf_2pt[[particle]][[p_tot_tag]][[g[1]]][[g[2]]])){
+                cf_2pt[[particle]][[p_tot_tag]][[g[1]]][[g[2]]] <<- mul.cf(cf$c2 , factor)
+                cf_3pt[[particle]][[p_tot_tag]][[g[1]]][[g[2]]] <<- mul.cf(cf$c3 , factor)
 
             } else {
-                cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- add.cf(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]], cf$c2, b=factor)
-                cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- add.cf(cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]], cf$c3, b=factor)
+                cf_2pt[[particle]][[p_tot_tag]][[g[1]]][[g[2]]] <<- add.cf(cf_2pt[[particle]][[p_tot_tag]][[g[1]]][[g[2]]], cf$c2, b=factor)
+                cf_3pt[[particle]][[p_tot_tag]][[g[1]]][[g[2]]] <<- add.cf(cf_3pt[[particle]][[p_tot_tag]][[g[1]]][[g[2]]], cf$c3, b=factor)
 
             }
         }
@@ -459,22 +491,22 @@ calc_all <- function(test, letter){
 #' @export
 #' @examples
 
-gevp_2pt <- function(p_tag = "p_tot0", g1 = "Cg5", g2= "Cg5gt" ){
+gevp_2pt <- function(p_tag = "p_tot0", g1 = "Cg5", g2= "Cg5gt", particle="P" ){
 
-        g1i <- paste("Gi_",g1)
-        g1f <- paste("Gf_", g1)
-        g2i <- paste("Gi_",g2)
-        g2f <- paste("Gf_", g2)
-       mean_offdia <- add.cf(cf_2pt[[p_tag]][[g1i]][[g2f]], cf_2pt[[p_tag]][[g2i]][[g1f]], a=0.5, b=0.5)
-        gevp_cf <- c(cf_2pt[[p_tag]][[g1i]][[g1f]], mean_offdia)
+        g1i <- paste("Gi_",g1, sep="")
+        g1f <- paste("Gf_", g1, sep="")
+        g2i <- paste("Gi_",g2, sep="")
+        g2f <- paste("Gf_", g2, sep="")
+       mean_offdia <- add.cf(cf_2pt[[particle]][[p_tag]][[g1i]][[g2f]], cf_2pt[[particle]][[p_tag]][[g2i]][[g1f]], a=0.5, b=0.5)
+        gevp_cf <- c(cf_2pt[[particle]][[p_tag]][[g1i]][[g1f]], mean_offdia)
         gevp_cf <- c(gevp_cf, mean_offdia)
-        gevp_cf <- c(gevp_cf, cf_2pt[[p_tag]][[g2i]][[g2f]])
+        gevp_cf <- c(gevp_cf, cf_2pt[[particle]][[p_tag]][[g2i]][[g2f]])
         
         gevp_cf <- bootstrap.cf(gevp_cf)
         gevp_cf <- bootstrap.gevp(gevp_cf, element.order=c(1:(gevp_cf$nrObs)))
         
-        amp <- gevp2amplitude(gevp_cf, ratios[[p_tag]][[g1i]][[g1f]]$massfit)#, type="log")
-        plot.gevp.amplitude(amp, main=paste("Gevp Amplitude Plot of ",g1, " and ", g2, " at ", p_tag ), ylab="gevp", xlab="t")
+        amp <- gevp2amplitude(gevp_cf, ratios[[particle]][[p_tag]][[g1i]][[g1f]]$massfit)#, type="log")
+        plot.gevp.amplitude(amp, main=paste("Gevp Amplitude Plot of ",g1, " and ", g2, " at ", p_tag, " for particle=", particle, sep="" ), ylab="gevp", xlab="t")
         return(invisible(amp))
 }
 
@@ -487,8 +519,8 @@ calc_divideby <- function(factor=1/2){
 
             p_tot_tag <- sprintf("p_tot%i", num_i)
             for( g in gi){
-                cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- mul.cf(cf_2pt[[p_tot_tag]][[g[1]]][[g[2]]] , factor)
-                cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] <<- mul.cf(cf_3pt[[p_tot_tag]][[g[1]]][[g[2]]] , factor)
+                cf_2pt[[particle]][[p_tot_tag]][[g[1]]][[g[2]]] <<- mul.cf(cf_2pt[[particle]][[p_tot_tag]][[g[1]]][[g[2]]] , factor)
+                cf_3pt[[particle]][[p_tot_tag]][[g[1]]][[g[2]]] <<- mul.cf(cf_3pt[[particle]][[p_tot_tag]][[g[1]]][[g[2]]] , factor)
             }
         }
 
@@ -502,23 +534,23 @@ calc_divideby <- function(factor=1/2){
 #' @export
 #' @examples
 
-plot_comb <- function(g.i, g.f, mom.tag, bool){
+plot_comb <- function(g.i, g.f, mom.tag, bool, particle="P"){
     plotInfo <- list() 
     if(calcAll){
         num_i <- str_count(mom.tag, "1")
         p_tot_tag <- sprintf("p_tot%i", num_i)
-        c2 <- bootstrap.cf(cf_2pt[[p_tot_tag]][[g.i]][[g.f]])
-        c3 <- bootstrap.cf(cf_3pt[[p_tot_tag]][[g.i]][[g.f]])
+        c2 <- bootstrap.cf(cf_2pt[[particle]][[p_tot_tag]][[g.i]][[g.f]])
+        c3 <- bootstrap.cf(cf_3pt[[particle]][[p_tot_tag]][[g.i]][[g.f]])
     } else {
         c2 <- bootstrap.cf(cf$c2)
         c3 <- bootstrap.cf(cf$c3)
     }
 
-    pdf(sprintf("output/NJN_%s_%s_%s_%i.pdf", g.i, g.f, mom.tag, bool))
+    pdf(sprintf("output/NJN_%s_%s_%s_%s_%i.pdf",particle, g.i, g.f, mom.tag, bool))
     options(warn = -1)
-    print(sprintf("NJN_%s_%s_%s_%i.pdf", g.i, g.f, mom.tag, bool ))
-    plot.cf(c2, main="2pt-function correlator", log="y", ylab="C", xlab="t")
-    plot.cf(c3, main="3pt-function correlator", log="y", ylab="C", xlab="t") #legend_title="N-J-N")
+    print(sprintf("NJN_%s_%s_%s_%s_%i.pdf", particle, g.i, g.f, mom.tag, bool ))
+    plot.cf(c2, main=paste("2pt Cor. on cA211a/b.30.32, src=", g.i, ", snk=", g.f, ", mom=", mom.tag, ",\nparticletype=", particle), log="y", ylab="C", xlab="t", sep="" )
+    plot.cf(c3, main=paste("3pt Cor. on cA211a/b.30.32, src=", g.i, ", snk=", g.f, ", mom=", mom.tag, ",\nparticletype=", particle), log="y", ylab="C", xlab="t", sep="") #legend_title="N-J-N")
     meff <- bootstrap.effectivemass(c2, type="log")
     meff <- fit.effectivemass(meff, t1=par.t1, t2 = par.t2)
     plot.effectivemass(meff, main="Effective mass plot", ylab="meff", xlab="t", ylim=c(0,1))
@@ -529,7 +561,7 @@ plot_comb <- function(g.i, g.f, mom.tag, bool){
 
     #if(calcAll){
 
-    #    ratioData[[p_tot_tag]][[g.i]][[g.f]] <<- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
+    #    ratioData[[particle]][[p_tot_tag]][[g.i]][[g.f]] <<- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
     #} else {
     #    ratioData <<- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
     #}
@@ -546,20 +578,20 @@ plot_comb <- function(g.i, g.f, mom.tag, bool){
 #' @export
 #' @examples
 
-plot_2combs <- function(gi1 = "Gi_Cg5", gf1 = "Gf_Cg5", gi2 = "Gi_Cg5gt", gf2 = "Gf_Cg5gt", mom.tag = "px00py00pz00", col2 = "blue"){
+plot_2combs <- function(gi1 = "Gi_Cg5", gf1 = "Gf_Cg5", gi2 = "Gi_Cg5gt", gf2 = "Gf_Cg5gt", mom.tag = "px00py00pz00", particle="P", col2 = "blue"){
 
         stopifnot(calcAll)
 
         num_i <- str_count(mom.tag, "1")
         p_tot_tag <- sprintf("p_tot%i", num_i)
-        c2 <- bootstrap.cf(cf_2pt[[p_tot_tag]][[gi1]][[gf1]])
-        c3 <- bootstrap.cf(cf_3pt[[p_tot_tag]][[gi1]][[gf1]])
+        c2 <- bootstrap.cf(cf_2pt[[particle]][[p_tot_tag]][[gi1]][[gf1]])
+        c3 <- bootstrap.cf(cf_3pt[[particle]][[p_tot_tag]][[gi1]][[gf1]])
         
         cat("Ratio: ", gi1, " " , gf1)
         ratio1 <- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
 
-        c2 <- bootstrap.cf(cf_2pt[[p_tot_tag]][[gi2]][[gf2]])
-        c3 <- bootstrap.cf(cf_3pt[[p_tot_tag]][[gi2]][[gf2]])
+        c2 <- bootstrap.cf(cf_2pt[[particle]][[p_tot_tag]][[gi2]][[gf2]])
+        c3 <- bootstrap.cf(cf_3pt[[particle]][[p_tot_tag]][[gi2]][[gf2]])
 
         cat("Ratio: ", gi2, " " , gf2)
         ratio2 <- plot_ratio(c2,c3, t1=par.t1, t2=par.t2, add=TRUE, .col=col2)
