@@ -44,7 +44,7 @@ read_dia <- function(key, nrDiagram=c(1:4), file_str, src_str_alt, .gi= "Gi_Cg5"
     for (t in nrDiagram) {
           t_name <-  paste("t",toString(t), sep = "")
           key_str <- paste("/",corrKey,"/", src_str_alt,"/",.gf,"/Gc_id/",.gi,"/QX0_QY0_QZ0/",t_name,"/", .mom_tag , sep = "")
-          d <- aff_read_key(file_str, key_str, 4*4*time)
+          d <- aff_read_key(file_str, key_str, (4*4*time))
           #diagrams[t_name] <- raw_cf_data(cf = raw_cf_meta(Time=T, dim=c(4,4)),
           #                                  data = aperm(array(d, dim = c(4, 4, 64)), c(3,1,2)))
           diagrams[[t_name]] <- array(d, dim = c(4, 4, time))
@@ -52,6 +52,7 @@ read_dia <- function(key, nrDiagram=c(1:4), file_str, src_str_alt, .gi= "Gi_Cg5"
     return(Reduce('+', diagrams))    
 }
   pathToData<-function(letter){
+                print(src_vec)
       return(sprintf("/hiskp4/petschlies/nucleon-ff/cA211%s.30.32/J125-k0p2/", letter))
   }
 
@@ -78,7 +79,7 @@ getSrcList <- function(letter){
 #' @examples
 #' cf <- analyze()
 
-analyse <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_letter = "b", gi= "Gi_Cg5", gf = "Gf_Cg5", step = 24, mom_tag = "px00py00pz00", conf_start=0){
+analyse <- function(corrKey = "N-N",T=time, Lx=time/2, Ly=time/2, Lz=time/2, n_src = 16,n_conf = 1224, path_letter = "b", gi= "Gi_Cg5", gf = "Gf_Cg5", step = 24, mom_tag = "px00py00pz00", conf_start=0, meanOverSrc=TRUE){
 
     
     cf <- array(0, dim = c(T, (nchar(path_letter)*num_conf)))
@@ -120,11 +121,11 @@ analyse <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_lette
               
                 if(strcmp(corrKey, "P-P")){
                     key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n1/", mom_tag, sep = "")
-                    d <- aff_read_key(file_str, key_str, 4*4*T)
+                    d <- aff_read_key(file_str, key_str, (4*4*T))
                     # create SpinxSpinxTime matrix n1
                     n1 <- array(d, dim = c(4, 4, T))
                     key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n2/", mom_tag, sep = "")
-                    d <- aff_read_key(file_str, key_str, 4*4*T)
+                    d <- aff_read_key(file_str, key_str, (4*4*T))
 
                     # create SpinxSpinxTime matrix n2
                     n2 <- array(d, dim = c(4, 4, T))
@@ -134,11 +135,11 @@ analyse <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_lette
                 } else if (strcmp(corrKey, "N-N") & strcmp(letter, "b")) {
                     
                     key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n3/", mom_tag, sep = "")
-                    d <- aff_read_key(file_str, key_str, 4*4*T)
+                    d <- aff_read_key(file_str, key_str, (4*4*T))
                     # create SpinxSpinxTime matrix n1
                     n1 <- array(d, dim = c(4, 4, T))
                     key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n4/", mom_tag, sep = "")
-                    d <- aff_read_key(file_str, key_str, 4*4*T)
+                    d <- aff_read_key(file_str, key_str, (4*4*T))
 
                     # create SpinxSpinxTime matrix n2
                     n2 <- array(d, dim = c(4, 4, T))
@@ -185,13 +186,14 @@ analyse <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_lette
                 y_mom <- strtoi(substring(mom_mat[3], 2, nchar(mom_mat[3])))
                 z_mom <- strtoi(substring(mom_mat[4], 2, nchar(mom_mat[4])))
                 
-                mom_vec <- c(x_mom, y_mom, z_mom)
-
+                mom_vec <-2*pi*c(x_mom/Lx, y_mom/Ly, z_mom/Lz)
+                print(c(t_src,src_vec))
+                print(mom_vec)
                 # add phasefactor
                 for (t in c(1:T)) {
                     del_t <- (T + t-1 - t_src) %% T
                     phasefactor <- exp(1i * 3 * pi * del_t / T)
-                    impulsfactor <- exp(-1i * (mom_vec * src_vec))
+                    impulsfactor <- exp(-1i * dot(mom_vec ,src_vec))
                     nn[,,t] <- nn[,,t]*phasefactor*impulsfactor
                     # multiply projection matrix and take trace
                     cor[t,src,((conf-conf_start)/step+1)] <- trace(proj_p %*% nn[,,t])
@@ -216,10 +218,12 @@ analyse <- function(corrKey = "N-N",T=time, n_src = 16,n_conf = 1224, path_lette
     #  print(apply(Re(apply(cor_m, MARGIN=c(1,3), mean)), MARGIN=1, mean))
 
     cor <- (cor + cor_m)/2
+    if(!meanOverSrc){
+        return(cor)
+    }
     cor_mean_src <- apply(cor, MARGIN=c(1,3), mean)
 
     cf[,((l-1)*num_conf+1):(l*num_conf)] <- cor_mean_src
-
  } #end loop path_letter
 
   cf <- cf_meta(.cf=cf_orig(cf=Re(t(cf[1:(T/2+1),]))), T=T, symmetrised=TRUE)
@@ -552,8 +556,6 @@ plot_comb <- function(g.i, g.f, mom.tag, bool, particle="P"){
     plot.cf(c2, main=paste("2pt Cor. on cA211a/b.30.32, src=", g.i, ", snk=", g.f, ", mom=", mom.tag, ",\nparticletype=", particle), log="y", ylab="C", xlab="t", sep="" )
     plot.cf(c3, main=paste("3pt Cor. on cA211a/b.30.32, src=", g.i, ", snk=", g.f, ", mom=", mom.tag, ",\nparticletype=", particle), log="y", ylab="C", xlab="t", sep="") #legend_title="N-J-N")
     meff <- bootstrap.effectivemass(c2, type="log")
-    meff <- fit.effectivemass(meff, t1=par.t1, t2 = par.t2)
-    plot.effectivemass(meff, main="Effective mass plot", ylab="meff", xlab="t", ylim=c(0,1))
     print(summary.effectivemassfit(meff))
     plotInfo$massfit <- meff 
     plotInfo$masssumm <- summary.effectivemassfit(meff)
