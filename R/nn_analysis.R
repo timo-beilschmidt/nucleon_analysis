@@ -52,7 +52,6 @@ read_dia <- function(key, nrDiagram=c(1:4), file_str, src_str_alt, .gi= "Gi_Cg5"
     return(Reduce('+', diagrams))    
 }
   pathToData<-function(letter){
-                print(src_vec)
       return(sprintf("/hiskp4/petschlies/nucleon-ff/cA211%s.30.32/J125-k0p2/", letter))
   }
 
@@ -82,14 +81,15 @@ getSrcList <- function(letter){
 analyse <- function(corrKey = "N-N",T=time, Lx=time/2, Ly=time/2, Lz=time/2, n_src = 16,n_conf = 1224, path_letter = "b", gi= "Gi_Cg5", gf = "Gf_Cg5", step = 24, mom_tag = "px00py00pz00", conf_start=0, meanOverSrc=TRUE){
 
     
+    num_conf <- (n_conf-conf_start)/step+1
     cf <- array(0, dim = c(T, (nchar(path_letter)*num_conf)))
     l <- 0
 
     letter_vec <- strsplit(path_letter,"")[[1]]
     for(letter in letter_vec){ 
 
-        l <- l+1
-        cor <- array(0, dim = c(T, n_src, (num_conf)))
+    l <- l+1
+    cor <- array(0, dim = c(T, n_src, (num_conf)))
         cor_m <- array(0, dim = c(T, n_src, (num_conf)))
         cor_mean_src <- array(0, dim = c(T, (num_conf)))
         #load gamma matrices
@@ -187,29 +187,34 @@ analyse <- function(corrKey = "N-N",T=time, Lx=time/2, Ly=time/2, Lz=time/2, n_s
                 z_mom <- strtoi(substring(mom_mat[4], 2, nchar(mom_mat[4])))
                 
                 mom_vec <-2*pi*c(x_mom/Lx, y_mom/Ly, z_mom/Lz)
-                print(c(t_src,src_vec))
-                print(mom_vec)
                 # add phasefactor
+                shifted <- array(0, dim=c(4,4,T))
                 for (t in c(1:T)) {
                     del_t <- (T + t-1 - t_src) %% T
                     phasefactor <- exp(1i * 3 * pi * del_t / T)
-                    impulsfactor <- exp(-1i * dot(mom_vec ,src_vec))
-                    nn[,,t] <- nn[,,t]*phasefactor*impulsfactor
+                    nn[,,t] <- nn[,,t]*phasefactor
+                    shifted[,,(del_t+1)] <- nn[,,t]
                     # multiply projection matrix and take trace
-                    cor[t,src,((conf-conf_start)/step+1)] <- trace(proj_p %*% nn[,,t])
-                    cor_m[t,src,((conf-conf_start)/step+1)] <- trace(proj_m %*% nn[,,t])
+                    #cor[t,src,((conf-conf_start)/step+1)] <- sum(diag(proj_p %*% nn[,,t]))
+                    #cor_m[t,src,((conf-conf_start)/step+1)] <- sum(diag(proj_m %*% nn[,,t]))
                 } # end time loop
+                
+                    impulsfactor <- exp(-1i * dot(mom_vec ,src_vec))
+                    nn <- shifted*impulsfactor
+                cor[,src,((conf-conf_start)/step+1)] <- apply(nn, MARGIN=3, FUN=function(mat, proj){sum(diag(proj %*% mat)) }, proj=proj_p)
+                cor_m[,src,((conf-conf_start)/step+1)] <- apply(nn, MARGIN=3, FUN=function(mat, proj){sum(diag(proj %*% mat)) }, proj=proj_m)
+
+                cor_m[2:T,src,((conf-conf_start)/step+1)] <- Rev(cor_m[2:T,src,((conf-conf_start)/step+1)])
               
                 # shift source location to 0
-                cor[,src,((conf-conf_start)/step+1)] <- shift(cor[,src,((conf-conf_start)/step+1)], t_src, dir = "left")
-                cor_m[,src,((conf-conf_start)/step+1)] <- shift(cor_m[,src,((conf-conf_start)/step+1)], t_src, dir = "left")
+                #cor[,src,((conf-conf_start)/step+1)] <- shift(cor[,src,((conf-conf_start)/step+1)], t_src, dir = "left")
+                #cor_m[,src,((conf-conf_start)/step+1)] <- shift(cor_m[,src,((conf-conf_start)/step+1)], t_src, dir = "left")
         } # end source loop
     
    
   
     } # end loop conf
  
-    cor_m <- -1*Rev(cor_m, margin=1)
     #
     #  print("Not symmetrised positive parity:")
     #  print(apply(Re(apply(cor, MARGIN=c(1,3), mean)), MARGIN=1, mean))
@@ -217,9 +222,9 @@ analyse <- function(corrKey = "N-N",T=time, Lx=time/2, Ly=time/2, Lz=time/2, n_s
     #  print("Not symmetrised negative parity:")
     #  print(apply(Re(apply(cor_m, MARGIN=c(1,3), mean)), MARGIN=1, mean))
 
-    cor <- (cor + cor_m)/2
+    cor <- (cor - cor_m)/2
     if(!meanOverSrc){
-        return(cor)
+        return(list("cor"=cor, "cor_m"=cor_m))
     }
     cor_mean_src <- apply(cor, MARGIN=c(1,3), mean)
 
