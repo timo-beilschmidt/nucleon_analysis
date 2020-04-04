@@ -55,6 +55,31 @@ read_dia <- function(key, nrDiagram=c(1:4), file_str, src_str_alt, .gi= "Gi_Cg5"
       return(sprintf("/hiskp4/petschlies/nucleon-ff/cA211%s.30.32/J125-k0p2/", letter))
   }
 
+read_dia_list <- function(key, nrDiagram=c(1:4), file_str, src_str_alt, .gi= "Gi_Cg5", .gf = "Gf_Cg5", .mom_tag, two_pt=FALSE){
+
+    key_str <- c()
+    corrKey <- key
+    pre <- "t"
+    if(two_pt) pre <- "n"
+    for (t in nrDiagram) {
+          t_name <-  paste(pre,toString(t), sep = "")
+          if(two_pt){ str <- paste("/","N-N","/", src_str_alt,"/",.gi,"/",.gf,"/",t_name,"/", .mom_tag, sep = "")}
+          else { str <- paste("/",corrKey,"/", src_str_alt,"/",.gf,"/Gc_id/",.gi,"/QX0_QY0_QZ0/",t_name,"/", .mom_tag , sep = "")}
+          key_str <-c(key_str, str )
+          #d <- aff_read_key(file_str, key_str, (4*4*time))
+          #diagrams[t_name] <- raw_cf_data(cf = raw_cf_meta(Time=T, dim=c(4,4)),
+          #                                  data = aperm(array(d, dim = c(4, 4, 64)), c(3,1,2)))
+          #diagrams[[t_name]] <- array(d, dim = c(4, 4, time))
+     }
+    d <- aff_read_key_list(file_str, key_str, (4*4*time))
+    d <- array(d, dim=c(4, 4, time, length(nrDiagram)))
+    return(apply(d, MARGIN=c(1,2,3), sum))    
+}
+
+  pathToData<-function(letter){
+      return(sprintf("/hiskp4/petschlies/nucleon-ff/cA211%s.30.32/J125-k0p2/", letter))
+  }
+
 getSrcList <- function(letter){
 
   if(strcmp(letter, "a")){
@@ -120,50 +145,52 @@ analyse <- function(corrKey = "N-N",T=time, Lx=time/2, Ly=time/2, Lz=time/2, n_s
                 }
               
                 if(strcmp(corrKey, "P-P")){
-                    key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n1/", mom_tag, sep = "")
-                    d <- aff_read_key(file_str, key_str, (4*4*T))
+                    #key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n1/", mom_tag, sep = "")
+                    #d <- aff_read_key(file_str, key_str, (4*4*T))
                     # create SpinxSpinxTime matrix n1
-                    n1 <- array(d, dim = c(4, 4, T))
-                    key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n2/", mom_tag, sep = "")
-                    d <- aff_read_key(file_str, key_str, (4*4*T))
+                    #n1 <- array(d, dim = c(4, 4, T))
+                    #key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n2/", mom_tag, sep = "")
+                    #d <- aff_read_key(file_str, key_str, (4*4*T))
 
                     # create SpinxSpinxTime matrix n2
-                    n2 <- array(d, dim = c(4, 4, T))
+                    #n2 <- array(d, dim = c(4, 4, T))
 
-                    nn <- n1 + n2
+                    nn <-read_dia_list("N-N", nrDiagram=c(1:2), file_str, src_str_alt, .mom_tag=mom_tag, two_pt=TRUE) #n1 + n2
                 
                 } else if (strcmp(corrKey, "N-N") & strcmp(letter, "b")) {
                     
-                    key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n3/", mom_tag, sep = "")
-                    d <- aff_read_key(file_str, key_str, (4*4*T))
-                    # create SpinxSpinxTime matrix n1
-                    n1 <- array(d, dim = c(4, 4, T))
-                    key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n4/", mom_tag, sep = "")
-                    d <- aff_read_key(file_str, key_str, (4*4*T))
+                    #key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n3/", mom_tag, sep = "")
+                    #d <- aff_read_key(file_str, key_str, (4*4*T))
+                    ## create SpinxSpinxTime matrix n1
+                    #n1 <- array(d, dim = c(4, 4, T))
+                    #key_str <- paste("/","N-N","/", src_str_alt,"/",gi,"/",gf,"/n4/", mom_tag, sep = "")
+                    #d <- aff_read_key(file_str, key_str, (4*4*T))
 
-                    # create SpinxSpinxTime matrix n2
-                    n2 <- array(d, dim = c(4, 4, T))
+                    ## create SpinxSpinxTime matrix n2
+                    #n2 <- array(d, dim = c(4, 4, T))
 
-                    nn <- n1 + n2
+
+                    #nn <- n1 + n2
+                    nn <-read_dia_list("N-N", nrDiagram=c(3:4), file_str, src_str_alt, .mom_tag=mom_tag, two_pt=TRUE)
                 } else if (strcmp(corrKey, "P-ubGu-P")) {
                     
                     key <- "N-ubGu-N"
-                    nn <- read_dia(key, nrDiagram =c(1:4) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
+                    nn <- read_dia_list(key, nrDiagram =c(1:4) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
                 } else if (strcmp(corrKey, "P-dbGd-P")) {
                     key <- "N-dbGd-N"
-                    nn <- read_dia(key, nrDiagram =c(1:2) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
+                    nn <- read_dia_list(key, nrDiagram =c(1:2) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
 
                 } else if (strcmp(corrKey, "P-J-P") & strcmp(letter, "a")) {
-                    nn <- read_dia("N-ubGu-N", nrDiagram =c(1:4) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
-                    nn <- nn + read_dia("N-dbGd-N", nrDiagram =c(1:2) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
+                    nn <- read_dia_list("N-ubGu-N", nrDiagram =c(1:4) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
+                    nn <- nn + read_dia_list("N-dbGd-N", nrDiagram =c(1:2) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
 
                 } else if (strcmp(corrKey, "P-J-P") & strcmp(letter, "b")){
                     
-                    nn <- read_dia("N-qbGq-N", nrDiagram =c(1:6) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
+                    nn <- read_dia_list("N-qbGq-N", nrDiagram =c(1:6) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
 
                 }  else if (strcmp(corrKey, "N-J-N") & strcmp(letter, "b")){
                     
-                    nn <- read_dia("N-qbGq-N", nrDiagram =c(7:12) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
+                    nn <- read_dia_list("N-qbGq-N", nrDiagram =c(7:12) , file_str, src_str_alt, .mom_tag=mom_tag, .gi=gi, .gf=gf)
                 } else {
                     
                     stop("No valid corrKey and letter combination given to analyse!")
@@ -227,10 +254,9 @@ analyse <- function(corrKey = "N-N",T=time, Lx=time/2, Ly=time/2, Lz=time/2, n_s
         return(list("cor"=cor, "cor_m"=cor_m))
     }
     cor_mean_src <- apply(cor, MARGIN=c(1,3), mean)
-
     cf[,((l-1)*num_conf+1):(l*num_conf)] <- cor_mean_src
  } #end loop path_letter
-
+  
   cf <- cf_meta(.cf=cf_orig(cf=Re(t(cf[1:(T/2+1),]))), T=T, symmetrised=TRUE)
   cf <- bootstrap.cf(cf)
 
@@ -516,7 +542,7 @@ gevp_2pt <- function(p_tag = "p_tot0", g1 = "Cg5", g2= "Cg5gt", particle="P" ){
         
         amp <- gevp2amplitude(gevp_cf, ratios[[particle]][[p_tag]][[g1i]][[g1f]]$massfit)#, type="log")
         plot.gevp.amplitude(amp, main=paste("Gevp Amplitude Plot of ",g1, " and ", g2, " at ", p_tag, " for particle=", particle, sep="" ), ylab="gevp", xlab="t")
-        return(invisible(amp))
+        return(invisible(list("amplitude"=amp, "gevp"=gevp_cf)))
 }
 
 
@@ -561,8 +587,8 @@ plot_comb <- function(g.i, g.f, mom.tag, bool, particle="P"){
     plot.cf(c2, main=paste("2pt Cor. on cA211a/b.30.32, src=", g.i, ", snk=", g.f, ", mom=", mom.tag, ",\nparticletype=", particle), log="y", ylab="C", xlab="t", sep="" )
     plot.cf(c3, main=paste("3pt Cor. on cA211a/b.30.32, src=", g.i, ", snk=", g.f, ", mom=", mom.tag, ",\nparticletype=", particle), log="y", ylab="C", xlab="t", sep="") #legend_title="N-J-N")
     meff <- bootstrap.effectivemass(c2, type="log")
-    print(summary.effectivemassfit(meff))
-    plotInfo$massfit <- meff 
+    plotInfo$massfit <- fit.effectivemass(meff, t1=par.t1, t2=par.t2) 
+    print(summary.effectivemassfit(plotInfo$massfit))
     plotInfo$masssumm <- summary.effectivemassfit(meff)
     plotInfo$ratiofit <- plot_ratio(c2,c3, t1=par.t1, t2=par.t2, ylim=c(-25, -5))
 
