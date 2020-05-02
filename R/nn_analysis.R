@@ -289,8 +289,14 @@ ratio <- function( c3pt, indices, c2pt, ttau=1, T ){
 
 
 bootstrap.ratio <- function(c2, c3, R=5000, tau =1){
-    
-    r <- boot(data = c3$cf, R=R, statistic = ratio, c2pt=c2$cf, ttau=tau, T=c2$T)
+    if(length(c2$cf) != length(c3$cf)){
+    ind <- c((length(c3$cf[,1])-length(c2$cf[,1])):-1) 
+    ind2 <- c(1:length(c3$cf[,1]))
+    } else {
+        ind <- c((length(c3$cf[,1])/2+1):length(c3$cf[,1]))
+        ind2 <- ind
+    }
+    r <- boot(data = c3$cf[ind2,], R=R, statistic = ratio, c2pt=c2$cf[ind,], ttau=tau, T=c2$T)
     #write.table( df, file="m_boot.tmp", col.names=F, row.names=F )
     return( invisible ( r ) )
 }
@@ -316,6 +322,7 @@ summary_ratiofit <- function(object, ..., verbose = FALSE) {
         "(",100*length(which(is.na(ratio$cf[,ratio$ii])))/ length(ratio$cf[,ratio$ii]), "%)\n")
     #cat("NAs replaced in fit:", ratio$ratiofit$replace.na, "\n")
     cat("time range from", ratio$ratiofit$t1, " to ", ratio$ratiofit$t2, "\n")
+    cat("tau =", ratio$tau, "\n")
     #cat("No correlation functions", ratio$nrObs, "\n")
     #if(verbose) {
     #    cat("values with errors:\n\n")
@@ -343,16 +350,17 @@ summary_ratiofit <- function(object, ..., verbose = FALSE) {
 #' @examples
 #' 
 
-plot_ratio <- function(c2, c3 ,t1, t2, add=FALSE, .col="black", ...){
+plot_ratio <- function(c2, c3 ,t1, t2, add=FALSE, .col="black", .tau=1,  ...){
 
-    df <- bootstrap.ratio(c2, c3, R=5000)
+    df <- bootstrap.ratio(c2, c3, R=5000, tau=.tau)
     std = apply(df$t, c(2), sd )
-    std = std/sqrt(length(std))
+    std = std/sqrt(length(df$t[,1]))
+    
     if(!add){
-   plotwitherror(x=c(1:(c2$T)) , y=Re(df$t0[1:(c2$T)]), dy=Re(std[1:(c2$T)]) , main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30), col=.col,  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE, ...) 
+   plotwitherror(x=c(1:(c2$T)) , y=Re(df$t0[1:(c2$T)]), dy=Re(std[1:(c2$T)]) , main =paste0( "N-J-N linear response of effective mass to external bilinear current, tau=", .tau),ylab = "g_00",xlab = "t/a", xlim=c(0,30), col=.col,  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE, ...) 
     } else {
 
-   pointswitherror(x=c(1:(c2$T)) , y=Re(df$t0[1:(c2$T)]), dy=Re(std[1:(c2$T)]) , main = "N-J-N linear response of effective mass to external bilinear current",ylab = "g_00",xlab = "t", xlim=c(0,30), col=.col,  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE, ...) 
+   pointswitherror(x=c(1:(c2$T)) , y=Re(df$t0[1:(c2$T)]), dy=Re(std[1:(c2$T)]) , main =paste0( "N-J-N linear response of effective mass to external bilinear current, tau=", .tau),ylab = mtext(dM[eff]/ dlambda),xlab = "t/a", xlim=c(0,30), col=.col,  pch=1,cex=0.8, cex.main=1,lwd = 0.3, frame.plot=FALSE, ...) 
     }
   ratio <- cf_meta(.cf=cf_orig(cf=df$t), T=c2$T, symmetrised=TRUE)
   ratio <- bootstrap.cf(ratio)
@@ -374,15 +382,16 @@ plot_ratio <- function(c2, c3 ,t1, t2, add=FALSE, .col="black", ...){
   ratio$ratiofit <- fit.constant(M=M, y = ratio$cf0[t1:t2])
   ratio$ratiofit$t1 <- t1
   ratio$ratiofit$t2 <- t2
+  ratio$tau <- .tau
   ratio$ratiofit$t <- ratio$ratiofit.tsboot 
   ratio$ratiofit$t0 <- c(ratio$ratiofit$par[1], ratio$ratiofit$value)
   ratio$ratiofit$se <- sd(ratiofit.tsboot[c(1:(dim(ratiofit.tsboot)[1]-1)),1] )
   ratio$ratiofit$cf <- ratio$cf
   ratio$ratiofit$ii <- ratio$ii
   ratio$ratiofit$dof <- ratio$dof
-  ratio$chisq <- ratio$ratiofit$value
-  ratio$ratiofit$chisq <- ratio$ratiofit$value
-  ratio$Qval <- 1-pchisq(ratio$chisq, ratio$dof)
+  ratio$chisqr <- ratio$ratiofit$value
+  ratio$ratiofit$chisqr <- ratio$ratiofit$value
+  ratio$Qval <- 1-pchisq(ratio$chisqr, ratio$dof)
   lines(x=c(t1,t2),
                    y=c(ratio$ratiofit$par[1],ratio$ratiofit$par[1]),
                              col=.col,
@@ -439,6 +448,64 @@ plot_tau <- function(data, n_points = 32, n_tau = 8){
     for(time in c(2:n_points)){
         pointswitherror( x=c(1:n_tau),y= tau_array[time,,1], dy = tau_array[time,,2])
     }
+}
+
+bootmean <- function(vec, i) mean(vec[i])
+
+plot_ratiofit_vs_tau <- function(part="P", .gi = "Gi_Cg5", .gf = "Gf_Cg5", mom="0", .col="BLUE"){
+    
+    p_tag <- paste0("p_tot", mom)
+
+    data <- list()
+    tau_vec <- c(1:par.tau)
+    data$tau <- tau_vec
+    for(tau in tau_vec){
+        
+        tau_str <- paste0("tau", tau)
+        ratio <- ratios[[part]][[p_tag]][[.gi]][[.gf]][["ratiofit"]][[paste0("t1_",par.t1)]][[paste0("t2_",par.t2)]][[tau_str]]
+        data$val <- c( data$val, ratio$ratiofit$par)
+        data$se <- c(data$se , ratio$ratiofit$se)
+
+        if(exists("mat")){
+            mat <- cbind(mat, ratio$cf0[1:20])
+        } else {
+            mat <- matrix(ratio$cf0[1:20])
+        }
+
+    }
+    
+    pdf(sprintf("output/NJN_%s_%s_%s_%s_%i_%i_to_%i_ratio_vs_tau.pdf",part, .gi, .gf, p_tag, test, par.t1, par.t2))
+    plotwitherror(x=data$tau, y=data$val, ylim=c(-20, -5), dy = data$se, main = paste0("ratiofit vs tau, particle=", part, ", ", .gi, ", ", .gf, ", ",p_tag, ",\nt1=", par.t1, ", t2=", par.t2 ), ylab="Ratiofit Data",  xlab = "tau")
+
+    
+    #Cinv <- diag(1/data$se^2)
+    C <- cov(mat)
+    Cinv <- solve(C)
+    Z <- matrix(rep(1, par.tau))
+    M <- t(Z) %*% Cinv %*% Z
+    Mchol <- chol(M)
+    opt <- list()
+    opt$sd <- chol2inv(Mchol)
+    opt$se <- opt$sd/sqrt(par.tau)
+    opt$par <- opt$sd %*% t(Z) %*% Cinv %*% data$val
+
+  lines(x=c(1,par.tau),
+                   y=c(opt$par[1],opt$par[1]),
+                             col=.col,
+                             lwd=1.3)
+    #bs <- boot(data$val, bootmean, R=4000, stype="i")
+    #opt$se <- sd(bs$t)/sqrt(par.tau)
+        pcol <- col2rgb(.col,alpha=TRUE)/255                                                                                                   
+        pcol[4] <- 0.65
+              pcol <- rgb(red=pcol[1],green=pcol[2],blue=pcol[3],alpha=pcol[4])
+              rect(xleft=1, ybottom=opt$par[1]-opt$se[1],
+                              xright=par.tau, ytop=opt$par[1]+opt$se[1],
+                                         col=pcol,
+                                         border=NA)
+   
+    legend("topleft", c(paste0("fit value: ", opt$par[1], " pm ", opt$se)))
+dev.off()
+
 }
 
 
@@ -560,6 +627,27 @@ calc_divideby <- function(factor=1/2){
         }
 
 }
+#' plot Function for 2 correlator
+#'
+#' This function allows you to plot one specific correlator (2pt and 3pt) combination.
+#' @param 
+#' @keywords
+#' @export
+#' @examples
+
+plot_2cf <- function(cf1, cf2, tag1="Cg5", tag2="Cg5gt", col1="blue", col2="red", mom="0", particle="P", cor_type="2pt", ...){
+    c1 <- bootstrap.cf(cf1)
+    c2 <- bootstrap.cf(cf2)
+    t = c(0:(cf1$Time/2))
+
+    title <- paste0(cor_type," Cor. on cA211a/b.30.32, mom=", mom, ",\nparticletype=", particle)
+    plotwitherror(x = t, y = c1$cf0, dy = c1$tsboot.se, col=col1, log="y", main=title, xlab="t/a", ylab="C(t)",   ...)
+    pointswitherror(x = t, y = c2$cf0, dy = c2$tsboot.se, col=col2, log="y",  ...)
+    legend("topright", legend=c(tag1, tag2),
+                  col=c(col1, col2), bty="n", pch=c(21,22))
+}
+
+
 
 #' plot Function for single combination
 #'
@@ -581,17 +669,33 @@ plot_comb <- function(g.i, g.f, mom.tag, bool, particle="P"){
         c3 <- bootstrap.cf(cf$c3)
     }
 
-    pdf(sprintf("output/NJN_%s_%s_%s_%s_%i.pdf",particle, g.i, g.f, mom.tag, bool))
-    options(warn = -1)
+    pdf(sprintf("output/NJN_%s_%s_%s_%s_%i_%i_to_%i.pdf",particle, g.i, g.f, mom.tag, bool, par.t1, par.t2))
+    #options(warn = -1)
     print(sprintf("NJN_%s_%s_%s_%s_%i.pdf", particle, g.i, g.f, mom.tag, bool ))
-    plot.cf(c2, main=paste("2pt Cor. on cA211a/b.30.32, src=", g.i, ", snk=", g.f, ", mom=", mom.tag, ",\nparticletype=", particle), log="y", ylab="C", xlab="t", sep="" )
-    plot.cf(c3, main=paste("3pt Cor. on cA211a/b.30.32, src=", g.i, ", snk=", g.f, ", mom=", mom.tag, ",\nparticletype=", particle), log="y", ylab="C", xlab="t", sep="") #legend_title="N-J-N")
+    plot.cf(c2, main=paste("2pt Cor. on cA211a/b.30.32, src=", g.i, ", snk=", g.f, ", mom=", mom.tag, ",\nparticletype=", particle), log="y", ylab="C(t)", xlab="t/a", sep="" )
+    plot.cf(c3, main=paste("3pt Cor. on cA211a/b.30.32, src=", g.i, ", snk=", g.f, ", mom=", mom.tag, ",\nparticletype=", particle), log="y", ylab="C(t)", xlab="t/a", sep="") #legend_title="N-J-N")
     meff <- bootstrap.effectivemass(c2, type="log")
-    plotInfo$massfit <- fit.effectivemass(meff, t1=par.t1, t2=par.t2) 
-    print(summary.effectivemassfit(plotInfo$massfit))
-    plotInfo$masssumm <- summary.effectivemassfit(meff)
-    plotInfo$ratiofit <- plot_ratio(c2,c3, t1=par.t1, t2=par.t2, ylim=c(-25, -5))
+    plotInfo$massfit <- list()
+    plotInfo$massfit[[paste0("t1_",par.t1)]] <- list()
+    plotInfo$masssum <- list()
+    plotInfo$masssum[[paste0("t1_",par.t1)]] <- list()
+    plotInfo$massfit[[paste0("t1_",par.t1)]][[paste0("t2_",par.t2)]] <- fit.effectivemass(meff, t1=par.t1, t2=par.t2) 
+    plot.effectivemass(plotInfo$massfit[[paste0("t1_",par.t1)]][[paste0("t2_",par.t2)]], main=paste("Effective mass of 2pt Cor. on cA211a/b.30.32, src=", g.i, ", snk=", g.f, "\n, mom=", mom.tag, ",particletype=", particle), ylab="aM_eff", xlab="t/a", ylim=c(0, 1))
+    print(plotInfo$masssum[[paste0("t1_",par.t1)]][[paste0("t2_",par.t2)]] <- summary.effectivemassfit(plotInfo$massfit[[paste0("t1_",par.t1)]][[paste0("t2_",par.t2)]]))
+    #plotInfo$masssumm <- summary.effectivemassfit(meff)
+    plotInfo$ratiofit <- list()
+    if(is.null(plotInfo$ratiofit[[paste0("t1_",par.t1)]])){
+        plotInfo$ratiofit[[paste0("t1_",par.t1)]] <- list()
+    }
+    if(is.null(plotInfo$ratiofit[[paste0("t1_",par.t1)]][[paste0("t2_",par.t2)]])){
+        plotInfo$ratiofit[[paste0("t1_",par.t1)]][[paste0("t2_",par.t2)]] <- list()
+    }
+    for(t in c(1:par.tau)){
+        print(paste0("Plotting comb with tau =",t))
+        plotInfo$ratiofit[[paste0("t1_",par.t1)]][[paste0("t2_",par.t2)]][[paste0("tau", t)]] <- plot_ratio(c2,c3, t1=par.t1, t2=par.t2, ylim=c(-25, -5), .tau=t)
+                  }
 
+    #plot_ratiofit_vs_tau(part=particle, gi=g.i, gf=g.f, mom=num_i)
     #if(calcAll){
 
     #    ratioData[[particle]][[p_tot_tag]][[g.i]][[g.f]] <<- plot_ratio(c2,c3, t1=par.t1, t2=par.t2)
